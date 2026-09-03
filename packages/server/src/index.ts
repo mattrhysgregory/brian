@@ -1,12 +1,13 @@
 import { DEFAULT_PORT } from "@brain/shared";
 import { createApp } from "./app";
 import { createDb, defaultDbPath } from "./db";
+import { createDefaultNotifier } from "./notify";
 
 const port = Number(process.env.BRAIN_PORT ?? DEFAULT_PORT);
 const dbPath = defaultDbPath();
 
 const db = createDb(dbPath);
-const app = createApp(db);
+const app = createApp(db, { notify: createDefaultNotifier() });
 
 const server = Bun.serve({
   hostname: "127.0.0.1",

@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
   ATTENTION_STATUSES,
+  ClearIssuesQuerySchema,
   CreateCommentSchema,
   CreateIssueSchema,
   ListIssuesQuerySchema,
@@ -15,15 +16,21 @@ import {
   type Comment,
   type Issue,
   type IssueWithComments,
+  type Status,
 } from "@brain/shared";
 import { nowIso, type Db } from "./db";
 import { EventBus } from "./events";
+import type { Notifier } from "./notify";
 
 export interface AppOptions {
   bus?: EventBus;
   /** Directory holding the built web bundle. Defaults to packages/web/dist. */
   webDist?: string;
+  /** Fires macOS notifications when an issue enters needs_attention/blocked. Defaults to a no-op. */
+  notify?: Notifier;
 }
+
+const ATTENTION_ENTRY_STATUSES = new Set<Status>(["needs_attention", "blocked"]);
 
 const DEFAULT_WEB_DIST = resolve(import.meta.dir, "..", "..", "web", "dist");
 
@@ -62,6 +69,7 @@ async function readJson(c: { req: { json: () => Promise<unknown> } }): Promise<u
 export function createApp(db: Db, options: AppOptions = {}) {
   const bus = options.bus ?? new EventBus();
   const webDist = options.webDist ?? DEFAULT_WEB_DIST;
+  const notify = options.notify ?? (() => {});
 
   const emit = (kind: ChangedEvent["kind"], id: number, action: ChangedEvent["action"]) =>
     bus.emit({ kind, id, action });
@@ -147,7 +155,9 @@ export function createApp(db: Db, options: AppOptions = {}) {
       .run(title, description ?? null, status, project ?? null, created_by, ts, ts);
     const id = Number(lastInsertRowid);
     emit("issue", id, "created");
-    return c.json(getIssue(id) as Issue, 201);
+    const created = getIssue(id) as Issue;
+    if (ATTENTION_ENTRY_STATUSES.has(created.status)) notify(created);
+    return c.json(created, 201);
   });
 
   app.get("/api/issues/:id", (c) => {
@@ -163,6 +173,7 @@ export function createApp(db: Db, options: AppOptions = {}) {
     if (!Number.isInteger(id)) return c.json({ error: "Invalid issue id" }, 400);
     if (!getIssue(id)) return c.json({ error: "Issue not found" }, 404);
 
+    const before = getIssue(id) as Issue;
     const parsed = UpdateIssueSchema.safeParse(await readJson(c));
     if (!parsed.success) return c.json({ error: firstIssue(parsed.error) }, 400);
 
@@ -181,7 +192,32 @@ export function createApp(db: Db, options: AppOptions = {}) {
       id as never,
     );
     emit("issue", id, "updated");
-    return c.json(getIssue(id) as Issue);
+    const updated = getIssue(id) as Issue;
+    if (
+      updated.status !== before.status &&
+      ATTENTION_ENTRY_STATUSES.has(updated.status)
+    ) {
+      notify(updated);
+    }
+    return c.json(updated);
+  });
+
+  app.delete("/api/issues", (c) => {
+    const raw = c.req.query();
+    const cleaned: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw)) if (v !== "") cleaned[k] = v;
+
+    const parsed = ClearIssuesQuerySchema.safeParse(cleaned);
+    if (!parsed.success) return c.json({ error: firstIssue(parsed.error) }, 400);
+
+    // `changes` from the DELETE itself would also count comment rows removed
+    // by the ON DELETE CASCADE, so count matching issues up front instead.
+    const { n: deleted } = db
+      .query("SELECT COUNT(*) AS n FROM issues WHERE status = ?")
+      .get(parsed.data.status) as { n: number };
+    db.query("DELETE FROM issues WHERE status = ?").run(parsed.data.status);
+    if (deleted > 0) emit("bulk", 0, "deleted");
+    return c.json({ deleted });
   });
 
   app.delete("/api/issues/:id", (c) => {

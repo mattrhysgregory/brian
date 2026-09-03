@@ -53,6 +53,7 @@ brain list [--status <s>] [--project <p>] [--all]
 brain attention [--project <p>]    # needs_attention + blocked, with latest comment
 brain show <id>
 brain move <id> <status>           # aliases: attention -> needs_attention, done -> resolved
+brain clear <status>               # deletes every issue in a column, cascades comments
 brain edit <id> [--title] [--desc|--desc-file] [--project]
 brain comment <id> "<body>"|-      # - reads the body from stdin
 brain rm <id>
@@ -81,9 +82,21 @@ Claude Code session on the machine picks it up from `~/.claude/skills/brain`.
 | `BRAIN_PORT` | `4400` | Port the server listens on |
 | `BRAIN_DB` | `~/.brain/brain.db` | SQLite database path |
 | `BRAIN_URL` | `http://localhost:4400` | Base URL the CLI/web use to reach the server |
+| `BRAIN_NOTIFY` | (unset = on) | Set to `0` to disable macOS notifications |
 
 `BRAIN_PORT` and `BRAIN_DB` are propagated into the launchd plist at install
 time (see above), so the background service and your shell agree.
+
+## Notifications & the Dock badge
+
+On macOS, the server fires a notification (`osascript`) whenever an issue
+enters `needs_attention` or `blocked` — on creation with that status, or on
+a status change into it. Disable with `BRAIN_NOTIFY=0`.
+
+The PWA also sets the Dock badge to the count of `needs_attention` +
+`blocked` issues, but only while the app window is open — the badge does
+not update in the background, so don't rely on it alone to notice new
+attention items; the notification is the reliable signal.
 
 The server is localhost-only and unauthenticated. As a cheap CSRF guard, any
 non-GET `/api/*` request carrying an `Origin` header from a host other than

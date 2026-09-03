@@ -22,13 +22,20 @@ function isStatus(value: unknown): value is Status {
 export function Board({
   issues,
   commentCounts,
+  totalCounts,
   onOpenIssue,
   onMove,
+  onClear,
+  clearingStatus,
 }: {
   issues: Issue[];
   commentCounts: Record<number, number>;
+  /** Per-column totals across all projects, ignoring the project filter. */
+  totalCounts: Record<Status, number>;
   onOpenIssue: (id: number) => void;
   onMove: (id: number, status: Status) => void;
+  onClear: (status: Status) => void;
+  clearingStatus: Status | null;
 }) {
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -103,7 +110,10 @@ export function Board({
             status={status}
             issues={byStatus[status]}
             commentCounts={commentCounts}
+            totalCount={totalCounts[status]}
             onOpenIssue={onOpenIssue}
+            onClear={() => onClear(status)}
+            clearing={clearingStatus === status}
           />
         ))}
       </div>

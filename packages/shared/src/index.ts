@@ -79,9 +79,16 @@ export const ListIssuesQuerySchema = z.object({
 
 /** Payload pushed on the SSE stream, event name "changed". */
 export interface ChangedEvent {
-  kind: "issue" | "comment";
+  /** "bulk" = many issues changed at once (e.g. clear column); id is 0. */
+  kind: "issue" | "comment" | "bulk";
   id: number;
   action: "created" | "updated" | "deleted";
+}
+
+export const ClearIssuesQuerySchema = z.object({ status: StatusSchema });
+
+export interface ClearResult {
+  deleted: number;
 }
 
 export interface ApiError {

@@ -30,6 +30,7 @@ POST   /api/issues                            -> Issue    { title, description?,
 GET    /api/issues/:id                        -> IssueWithComments
 PATCH  /api/issues/:id                        -> Issue    { title?, description?, status?, project? }
 DELETE /api/issues/:id                        -> 204
+DELETE /api/issues?status=<s>                 -> 200 { deleted: n }   (clear a column; emits kind "bulk")
 POST   /api/issues/:id/comments               -> Comment  { author?, body }
 DELETE /api/comments/:id                      -> 204
 GET    /api/attention                         -> Issue[]  (status in needs_attention, blocked)
@@ -45,6 +46,10 @@ Errors: `{ error: string }` with 400/404. Validation via zod schemas in `shared`
 2. **web** — Vite + React + Tailwind + shadcn, dnd-kit board, Sheet detail with Lexical markdown editor, comments, PWA manifest + service worker (vite-plugin-pwa), SSE hook.
 3. **cli + skill + install** — `brain` CLI (commander-style, minimal deps), SKILL.md, launchd plist template, `scripts/install.ts`, README.
 4. **verify** — run everything, browser smoke test, code review, fix-ups.
+
+## Added 2026-09-03 (after first install)
+- Clear column: `DELETE /api/issues?status=`, column header menu in the UI with inline confirm, `brain clear <status>` in the CLI.
+- Attention signal: web app sets the PWA Dock badge (`navigator.setAppBadge`) to the count of needs_attention + blocked while the window is open. Server sends a macOS notification (osascript) when an issue enters needs_attention or blocked; disable with `BRAIN_NOTIFY=0`.
 
 ## Non-goals for v1
 Auth (localhost only), multi-user sync, priorities, attachments, auto-archiving resolved.

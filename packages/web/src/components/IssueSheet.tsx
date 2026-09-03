@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2, X } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { STATUS_LABELS, STATUSES, type Status, type UpdateIssue } from "@brain/shared";
 import { api, queryKeys } from "@/lib/api";
 import { absoluteTime } from "@/lib/time";
@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ErrorToast } from "./ErrorToast";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { CommentThread } from "./CommentThread";
 
@@ -114,22 +115,7 @@ export function IssueSheet({
 
   return (
     <>
-      {saveError && (
-        <div
-          role="alert"
-          className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-md border border-danger bg-card px-3 py-2 text-[12px] shadow-lg"
-        >
-          <span>{saveError}</span>
-          <button
-            type="button"
-            onClick={() => setSaveError(null)}
-            className="text-muted hover:text-fg"
-            aria-label="Dismiss error"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
-      )}
+      {saveError && <ErrorToast message={saveError} onDismiss={() => setSaveError(null)} />}
       <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent aria-describedby={undefined}>
         <SheetTitle className="sr-only">{issue?.title ?? "Issue"}</SheetTitle>

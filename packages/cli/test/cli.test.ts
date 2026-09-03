@@ -280,6 +280,45 @@ describe("brain move", () => {
   });
 });
 
+describe("brain clear", () => {
+  test("DELETEs /api/issues?status= and prints the count, accepts aliases", async () => {
+    const { io, captured } = makeIo(() => jsonResponse({ deleted: 3 }));
+    const code = await run(["clear", "done"], io);
+    expect(code).toBe(0);
+    expect(captured.calls[0].url).toBe(`${BASE_URL}/api/issues?status=resolved`);
+    expect(captured.calls[0].init?.method).toBe("DELETE");
+    expect(captured.stdout[0]).toBe("deleted 3 issue(s) from resolved");
+  });
+
+  test("--json prints the raw result", async () => {
+    const { io, captured } = makeIo(() => jsonResponse({ deleted: 0 }));
+    const code = await run(["clear", "attention", "--json"], io);
+    expect(code).toBe(0);
+    expect(JSON.parse(captured.stdout[0])).toEqual({ deleted: 0 });
+  });
+
+  test("missing status is a usage error, exit 1", async () => {
+    const { io, captured } = makeIo(() => jsonResponse({}));
+    const code = await run(["clear"], io);
+    expect(code).toBe(1);
+    expect(captured.stderr[0]).toContain("brain clear <status>");
+  });
+
+  test("unknown status is a usage error, exit 1", async () => {
+    const { io, captured } = makeIo(() => jsonResponse({}));
+    const code = await run(["clear", "bogus"], io);
+    expect(code).toBe(1);
+    expect(captured.stderr[0]).toContain("unknown status");
+  });
+
+  test("400 from server surfaces as an api error", async () => {
+    const { io, captured } = makeIo(() => jsonResponse({ error: "status: Required" }, 400));
+    const code = await run(["clear", "todo"], io);
+    expect(code).toBe(1);
+    expect(captured.stderr[0]).toContain("status: Required");
+  });
+});
+
 describe("brain comment", () => {
   test("posts comment body", async () => {
     const comment: Comment = {

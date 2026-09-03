@@ -1,5 +1,5 @@
 import { DEFAULT_BASE_URL } from "@brain/shared";
-import type { AttentionIssue, Comment, Issue, IssueWithComments, Status } from "@brain/shared";
+import type { AttentionIssue, ClearResult, Comment, Issue, IssueWithComments, Status } from "@brain/shared";
 import { ApiRequestError, ServerUnreachableError, apiRequest } from "./api";
 import { formatAttention, formatIssueDetail, formatIssueList } from "./format";
 
@@ -88,6 +88,7 @@ Usage:
   brain attention [--project <p>] [--json]
   brain show <id> [--json]
   brain move <id> <status>
+  brain clear <status> [--json]
   brain edit <id> [--title <t>] [--desc <md>|--desc-file <path>|-] [--project <p>]
   brain comment <id> <body|-> [--author <a>]
   brain rm <id>
@@ -201,6 +202,19 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
         });
         if (json) io.stdout(JSON.stringify(issue));
         else io.stdout(`#${issue.id} -> ${issue.status}`);
+        return 0;
+      }
+
+      case "clear": {
+        const statusInput = positional[0];
+        if (!statusInput) throw new UsageError("brain clear <status>");
+        const status = resolveStatus(statusInput);
+        const result = await apiRequest<ClearResult>(io.baseUrl, "/api/issues", {
+          method: "DELETE",
+          query: { status },
+        });
+        if (json) io.stdout(JSON.stringify(result));
+        else io.stdout(`deleted ${result.deleted} issue(s) from ${status}`);
         return 0;
       }
 

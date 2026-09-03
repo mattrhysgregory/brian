@@ -62,6 +62,18 @@ brain move <id> <status>
 
 Updates only the status. Accepts aliases (`attention`, `done`).
 
+## brain clear
+
+```
+brain clear <status> [--json]
+```
+
+Deletes **every** issue in a column (cascades their comments) and prints
+`deleted N issue(s) from <status>`. Accepts the same status aliases as
+`brain move`. This is destructive and irreversible — agents should
+generally not clear columns on their own initiative; only run it when a
+human has explicitly asked to clear a column.
+
 ## brain edit
 
 ```

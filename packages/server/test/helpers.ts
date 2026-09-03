@@ -8,8 +8,13 @@ export function makeApp() {
   const bus = new EventBus();
   const events: ChangedEvent[] = [];
   bus.subscribe((e) => events.push(e));
-  const app = createApp(db, { bus, webDist: "/nonexistent-web-dist" });
-  return { db, bus, events, app };
+  const notified: Issue[] = [];
+  const app = createApp(db, {
+    bus,
+    webDist: "/nonexistent-web-dist",
+    notify: (issue) => notified.push(issue),
+  });
+  return { db, bus, events, notified, app };
 }
 
 export type Api = ReturnType<typeof makeApp>["app"];

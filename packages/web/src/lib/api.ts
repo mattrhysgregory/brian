@@ -1,4 +1,5 @@
 import type {
+  ClearResult,
   Comment,
   CreateComment,
   CreateIssue,
@@ -76,6 +77,13 @@ export const api = {
 
   deleteIssue(id: number): Promise<void> {
     return request<void>(`/issues/${id}`, { method: "DELETE" });
+  },
+
+  /** Deletes every issue in a column. Returns how many rows went. */
+  clearIssues(status: Status): Promise<ClearResult> {
+    return request<ClearResult>(`/issues?status=${encodeURIComponent(status)}`, {
+      method: "DELETE",
+    });
   },
 
   addComment(issueId: number, input: CreateComment): Promise<Comment> {
