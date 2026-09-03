@@ -50,11 +50,24 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
-        // The API is never served from the precache shell.
-        navigateFallback: "index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        // Precache only hashed/immutable assets. The HTML shell is never
+        // precached: a shell cached from build N pointing at assets from
+        // build N+1 renders a blank page after every rebuild. Navigations
+        // always go to the local server first, which is always available.
+        globPatterns: ["**/*.{js,css,svg,png,woff2}"],
+        globIgnores: ["**/index.html"],
+        navigateFallback: null,
         runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "brian-shell",
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 4 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             // The SSE stream must never be handled by the service worker.
             urlPattern: ({ url }) => url.pathname === "/api/events",

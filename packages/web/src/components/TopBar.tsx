@@ -1,3 +1,4 @@
+import { projectStyle } from "@/lib/projectColor";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,7 @@ export function TopBar({
             <SelectItem value={ALL_PROJECTS}>All projects</SelectItem>
             {projects.map((p) => (
               <SelectItem key={p} value={p}>
+                <span className="project-dot" style={projectStyle(p)} aria-hidden />
                 {p}
               </SelectItem>
             ))}

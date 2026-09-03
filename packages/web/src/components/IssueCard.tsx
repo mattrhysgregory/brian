@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { MessageSquare } from "lucide-react";
 import type { Issue } from "@brian/shared";
 import { Badge } from "@/components/ui/badge";
+import { projectStyle } from "@/lib/projectColor";
 import { GitHubMark } from "./GitHubMark";
 import { extractGitHubRefs, type GitHubRef } from "@/lib/github";
 import { absoluteTime, relativeTime } from "@/lib/time";
@@ -89,7 +90,11 @@ export function IssueCard({
     <>
       <p className="pr-6 text-[13px] leading-snug">{issue.title}</p>
       <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted">
-        {issue.project && <Badge>{issue.project}</Badge>}
+        {issue.project && (
+          <Badge className="project-badge" style={projectStyle(issue.project)}>
+            {issue.project}
+          </Badge>
+        )}
         <span title={absoluteTime(issue.updated_at)}>{relativeTime(issue.updated_at)}</span>
         {commentCount != null && commentCount > 0 && (
           <span className="ml-auto inline-flex items-center gap-1" title={`${commentCount} comments`}>
@@ -105,10 +110,12 @@ export function IssueCard({
     <div
       className={cn(
         "group relative rounded-md border border-border bg-card transition-colors",
+        issue.project && "project-stripe",
         onOpen && "hover:border-muted focus-within:border-muted",
         dragging && "opacity-40",
         overlay && "shadow-lg",
       )}
+      style={issue.project ? projectStyle(issue.project) : undefined}
     >
       {onOpen ? (
         // A real button, so the card is reachable and openable from the

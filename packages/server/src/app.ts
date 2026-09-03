@@ -313,7 +313,17 @@ export function createApp(db: Db, options: AppOptions = {}) {
   });
   app.use("/*", staticFiles);
   // SPA fallback: any other GET renders the shell so client-side routing works.
-  app.get("*", async (c) => (await spaShell(c, async () => {})) ?? notBuilt(c));
+  // Asset-looking paths (hashed bundles from an older build, anything with a
+  // file extension) must 404 instead, otherwise a stale service worker gets
+  // HTML back for a missing .js chunk and renders a blank page.
+  app.get("*", async (c) => {
+    const path = new URL(c.req.url).pathname;
+    const last = path.slice(path.lastIndexOf("/") + 1);
+    if (path.startsWith("/assets/") || /\.[a-z0-9]+$/i.test(last)) {
+      return c.text("Not found", 404);
+    }
+    return (await spaShell(c, async () => {})) ?? notBuilt(c);
+  });
 
   return app;
 }

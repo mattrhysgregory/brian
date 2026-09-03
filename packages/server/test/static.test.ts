@@ -34,6 +34,14 @@ describe("static serving", () => {
     expect(await res.text()).toContain("brian shell");
   });
 
+  test("missing asset paths 404 instead of returning the shell", async () => {
+    for (const path of ["/assets/index-OLDHASH.js", "/sw-old.js", "/icons/missing.png"]) {
+      const res = await app.request(path);
+      expect(res.status).toBe(404);
+      expect(await res.text()).not.toContain("<html");
+    }
+  });
+
   test("api routes are not shadowed by the SPA fallback", async () => {
     expect((await app.request("/api/health")).status).toBe(200);
     const missing = await app.request("/api/nope");
