@@ -26,6 +26,8 @@ export interface Issue {
   created_by: string;
   created_at: string;
   updated_at: string;
+  /** Number of comments on the issue (denormalised on read). */
+  comment_count: number;
 }
 
 export interface Comment {

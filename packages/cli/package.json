@@ -1,0 +1,14 @@
+{
+  "name": "@brain/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "brain": "./src/index.ts" },
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@brain/shared": "workspace:*"
+  }
+}

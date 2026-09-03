@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+/*
+ * Minimal neutral theme. Light is the default; dark follows the OS via
+ * prefers-color-scheme only — there is no in-app theme toggle by design.
+ */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 0.375rem;
+}
+
+@layer theme {
+  :root {
+    --bg: oklch(0.995 0 0);
+    --panel: oklch(0.975 0 0);
+    --card: oklch(1 0 0);
+    --fg: oklch(0.22 0 0);
+    --muted: oklch(0.53 0 0);
+    --border: oklch(0.905 0 0);
+    --accent: oklch(0.94 0 0);
+    --danger: oklch(0.53 0.19 27);
+    --ring: oklch(0.62 0 0);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: oklch(0.16 0 0);
+      --panel: oklch(0.192 0 0);
+      --card: oklch(0.225 0 0);
+      --fg: oklch(0.93 0 0);
+      --muted: oklch(0.63 0 0);
+      --border: oklch(0.3 0 0);
+      --accent: oklch(0.27 0 0);
+      --danger: oklch(0.68 0.17 25);
+      --ring: oklch(0.58 0 0);
+    }
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-card: var(--card);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    margin: 0;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* ---- Lexical editor content styles (kept small and shared with the read-only view) ---- */
+@layer components {
+  .lex-root {
+    outline: none;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+  .lex-root > *:first-child {
+    margin-top: 0;
+  }
+  .lex-root > *:last-child {
+    margin-bottom: 0;
+  }
+  .lex-p {
+    margin: 0 0 0.625rem;
+  }
+  .lex-h1 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+  }
+  .lex-h2 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0.875rem 0 0.4375rem;
+  }
+  .lex-h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0.75rem 0 0.375rem;
+  }
+  .lex-quote {
+    margin: 0 0 0.625rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--border);
+    color: var(--muted);
+  }
+  .lex-ul,
+  .lex-ol {
+    margin: 0 0 0.625rem;
+    padding-left: 1.25rem;
+  }
+  .lex-ul {
+    list-style: disc;
+  }
+  .lex-ol {
+    list-style: decimal;
+  }
+  .lex-li {
+    margin: 0.125rem 0;
+  }
+  .lex-nested-li {
+    list-style: none;
+  }
+  .lex-link {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .lex-code-inline {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--accent);
+    border-radius: 3px;
+    padding: 0.0625rem 0.25rem;
+  }
+  .lex-code-block {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--accent);
+    border-radius: var(--radius);
+    padding: 0.625rem 0.75rem;
+    margin: 0 0 0.625rem;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  .lex-bold {
+    font-weight: 600;
+  }
+  .lex-italic {
+    font-style: italic;
+  }
+  .lex-strike {
+    text-decoration: line-through;
+  }
+  .lex-underline {
+    text-decoration: underline;
+  }
+}
