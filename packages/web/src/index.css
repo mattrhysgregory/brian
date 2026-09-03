@@ -191,8 +191,8 @@
 
 /* Pointer cursor on everything interactive. Unlayered + !important so no
    component class or preflight rule can override it. */
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]),
+button:not(:disabled):not(.cursor-grab),
+[role="button"]:not([aria-disabled="true"]):not(.cursor-grab),
 [role="menuitem"]:not([data-disabled]),
 [role="option"]:not([data-disabled]),
 [role="tab"],
