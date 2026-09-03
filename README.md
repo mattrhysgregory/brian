@@ -1,111 +1,235 @@
 # brain
 
-A tiny local Kanban for tracking work — especially autonomous AI-agent work
-that needs a human in the loop. One Bun process serves the API and the web
-UI; a `brain` CLI and a Claude Code skill let agents file, update, and read
-issues; a PWA lets you triage, comment, and delete them.
+A small local Kanban board for keeping track of work, especially the work your
+AI agents do on your behalf. Agents file cards when they need you. You reply
+from the board. They pick up your reply and carry on.
 
-Columns: `todo`, `needs_attention`, `blocked`, `resolved`.
+It runs on your machine, starts at login, and stores everything in one SQLite
+file. Nothing leaves your laptop.
 
-## Quick start
+```
+  Claude Code (any repo)                        You
+  ─────────────────────                         ───
+  finishes a task / gets stuck                  see notification + Dock badge
+        │                                             │
+        ▼   brain add … --status attention            ▼
+  ┌──────────────────────────────────────────────────────────┐
+  │  todo   │  needs attention  │  blocked  │  resolved       │   ← board
+  └──────────────────────────────────────────────────────────┘
+        ▲                                             │
+        │   brain show <id> --json                    ▼
+  reads your comment, continues, moves to resolved    comment / drag / delete
+```
+
+## Install
+
+You need [Bun](https://bun.sh) 1.4 or newer and macOS for the login service
+(other platforms work but must start the server by hand).
 
 ```sh
+git clone <this repo> ~/git/brain
+cd ~/git/brain
 bun install
-bun run install:brain   # builds the web UI, installs the CLI + skill, starts the launchd service
+bun run install:brain
 ```
 
-Then open <http://localhost:4400>.
+That builds the web app, installs the `brain` command, installs the Claude
+skill globally, and registers a launchd service that runs the server at login.
+When it finishes, open <http://localhost:4400>.
 
-`install:brain` runs `scripts/install.ts`, which:
+**Install it as an app.** In Chrome, click the install icon at the right of the
+address bar (or Chrome menu, then "Install brain"). You get a Dock icon, a
+standalone window, and a badge showing how many cards need you.
 
-1. builds `packages/web` (skip with `--no-build`)
-2. symlinks `.claude/skills/brain` → `~/.claude/skills/brain`
-3. links the `brain` CLI globally (`bun link`)
-4. **macOS only** — installs and loads a launchd LaunchAgent
-   (`com.brain.server`) that runs the server at login and keeps it alive, and
-   waits for `/api/health`. On any other platform this step is skipped with a
-   note: start the server yourself with `bun run start`, or wrap that command
-   in a systemd user unit.
+To preview what the installer will do without changing anything:
+`bun run scripts/install.ts --dry-run`.
 
-If `BRAIN_PORT` or `BRAIN_DB` are set in the shell you run the installer from,
-they are copied into the LaunchAgent's `EnvironmentVariables` so the login
-service uses the same port and database. Re-run the installer after changing
-them.
+## The board
 
-Preview any of this without changing anything: `bun run scripts/install.ts --dry-run`.
+Four columns, in the order work flows:
 
-## Dev workflow
+| Column | Meaning |
+|---|---|
+| Todo | Queued work. Yours or an agent's. |
+| Needs attention | An agent finished something and wants a review, an answer, or a decision. |
+| Blocked | An agent cannot continue without something from you. |
+| Resolved | Done. Clear it out whenever you like. |
 
-```sh
-bun run dev    # runs the server (watch mode) and the Vite dev server together
-bun run test   # bun test across the workspace
-bun run typecheck
+Things you can do:
+
+- **New** creates a card. Title is required, description is optional markdown.
+- **Click a card** to open it. Edit the title inline, change the column, set a
+  project, and write the description in a rich-text editor that reads and
+  writes markdown.
+- **Drag cards** between columns using the grip handle that appears on hover.
+  Keyboard works too: focus the handle, press Space, use the arrow keys, press
+  Space again.
+- **Comment** at the bottom of a card. Cmd+Enter posts. Your comments are
+  authored as "me", so agents can tell your replies from their own notes.
+- **Delete** a card from inside it, or clear a whole column from the "…" menu
+  in the column header. Both ask for confirmation inline.
+- **Filter by project** using the dropdown in the top bar.
+
+The board updates live. When an agent files or changes a card, it appears
+without a refresh.
+
+## Using it with Claude
+
+The installer puts a skill at `~/.claude/skills/brain`, so every Claude Code
+session on your machine knows about the board. You do not need to configure
+anything per repo.
+
+**Claude files cards on its own** when it hits one of these situations:
+
+- It finished a piece of autonomous work and wants you to review it. The card
+  lands in Needs attention.
+- It is stuck on a decision, a credential, access, or missing context. The
+  card lands in Blocked with a description of exactly what it needs.
+- It noticed follow-up work it is not doing now. The card lands in Todo.
+
+Cards are tagged with the repo name as the project and a short author name, so
+you can see which repo and which session raised it.
+
+**You can also ask directly.** Some prompts that work well:
+
+```
+What needs my attention?
+Track this as a task: migrate the auth middleware to the new session store.
+Check the brain board for anything about the payments repo and act on my replies.
+File a card asking me to review this PR when you're done.
+Resolve #12, I've answered your question on the board.
 ```
 
-The server alone: `bun run start` (serves `/api/*` and, once built, the
-static web bundle from `packages/web/dist`).
+**The daily loop** looks like this:
 
-## CLI cheat-sheet
+1. A notification arrives, or the Dock badge ticks up.
+2. Open the board, read the card, reply in the comments. Move it if you like,
+   but you don't have to.
+3. Next time Claude works in that repo, or when you tell it to check, it reads
+   your reply, acts on it, and moves the card to Resolved.
+
+**Get Claude to check at the start of every session.** Add a session hook to
+`~/.claude/settings.json` so open items for the current repo are in front of
+Claude before it starts:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "brain attention --project \"$(basename \"$PWD\")\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**A note on trust.** Agents can create, edit, comment on, move, and delete
+individual cards. The skill tells them to only file things that genuinely need
+a human, to never clear whole columns, and to only resolve a card when your
+reply actually closes it. If an agent gets this wrong, it is a prompt problem.
+Edit `.claude/skills/brain/SKILL.md` in this repo and the change applies
+everywhere, because the global skill is a symlink.
+
+## Notifications and the Dock badge
+
+When a card enters Needs attention or Blocked, the server shows a macOS
+notification. It arrives from "Script Editor" because that is how command-line
+notifications work on macOS. If you don't see one, allow Script Editor under
+System Settings, Notifications. Set `BRAIN_NOTIFY=0` to turn them off.
+
+The installed app also sets the Dock badge to the number of cards in Needs
+attention plus Blocked. The badge only updates while the app window is open,
+even in the background, so leave it running if you want the count to be
+accurate.
+
+## CLI
+
+The same `brain` command your agents use. Everything takes `--json`.
 
 ```sh
-brain add "<title>" [--desc <md>|--desc-file <path>|-] [--status <s>] [--project <p>] [--author <a>]
-brain list [--status <s>] [--project <p>] [--all]
-brain attention [--project <p>]    # needs_attention + blocked, with latest comment
+brain add "<title>" [--desc <md> | --desc-file <path> | --desc-file -] [--status <s>] [--project <p>] [--author <a>]
+brain list [--status <s>] [--project <p>] [--all]     # hides resolved unless --all
+brain attention [--project <p>]                       # needs_attention + blocked, with latest comment
 brain show <id>
-brain move <id> <status>           # aliases: attention -> needs_attention, done -> resolved
-brain clear <status>               # deletes every issue in a column, cascades comments
-brain edit <id> [--title] [--desc|--desc-file] [--project]
-brain comment <id> "<body>"|-      # - reads the body from stdin
+brain move <id> <status>                              # aliases: attention, done
+brain edit <id> [--title <t>] [--desc <md>] [--project <p>]
+brain comment <id> "<body>"                           # or - to read stdin
 brain rm <id>
 brain rm-comment <id>
-brain open                         # opens the board in your browser
+brain clear <status>                                  # deletes a whole column
+brain open                                            # opens the board
 ```
 
-Every command supports `--json` (raw API response, nothing else — for
-scripting). Talks to `BRAIN_URL` (default `http://localhost:4400`). If the
-server isn't reachable it prints a clear message to stderr and exits 2.
+Statuses are `todo`, `needs_attention`, `blocked`, `resolved`. If the server is
+not running the CLI says so and exits with code 2.
 
-## The skill
+## Configuration
 
-`.claude/skills/brain/SKILL.md` teaches Claude Code when to file an issue
-(finished work needing review → `needs_attention`; blocked → `blocked`;
-follow-up work → `todo`; human reply resolves it → `resolved`), how to check
-for human replies (`brain show <id> --json`), and the conventions to use
-(`--project <repo>`, a short `--author`). `.claude/skills/brain/reference.md`
-has the full CLI reference. Installed automatically by `install:brain`; any
-Claude Code session on the machine picks it up from `~/.claude/skills/brain`.
-
-## Config
-
-| Env var | Default | Meaning |
+| Variable | Default | What it does |
 |---|---|---|
 | `BRAIN_PORT` | `4400` | Port the server listens on |
-| `BRAIN_DB` | `~/.brain/brain.db` | SQLite database path |
-| `BRAIN_URL` | `http://localhost:4400` | Base URL the CLI/web use to reach the server |
-| `BRAIN_NOTIFY` | (unset = on) | Set to `0` to disable macOS notifications |
+| `BRAIN_DB` | `~/.brain/brain.db` | Where the database lives |
+| `BRAIN_URL` | `http://localhost:4400` | Where the CLI looks for the server |
+| `BRAIN_NOTIFY` | on | Set to `0` to disable macOS notifications |
 
-`BRAIN_PORT` and `BRAIN_DB` are propagated into the launchd plist at install
-time (see above), so the background service and your shell agree.
+Set `BRAIN_PORT` or `BRAIN_DB` in your shell before running the installer and
+they are baked into the login service. Re-run the installer if you change them.
 
-## Notifications & the Dock badge
+Logs are in `~/.brain/logs/`. To restart the service after pulling changes:
 
-On macOS, the server fires a notification (`osascript`) whenever an issue
-enters `needs_attention` or `blocked` — on creation with that status, or on
-a status change into it. Disable with `BRAIN_NOTIFY=0`.
+```sh
+bun run build
+launchctl kickstart -k gui/$UID/com.brain.server
+```
 
-The PWA also sets the Dock badge to the count of `needs_attention` +
-`blocked` issues, but only while the app window is open — the badge does
-not update in the background, so don't rely on it alone to notice new
-attention items; the notification is the reliable signal.
+## Sharing with your team
 
-The server is localhost-only and unauthenticated. As a cheap CSRF guard, any
-non-GET `/api/*` request carrying an `Origin` header from a host other than
-`localhost`/`127.0.0.1` is rejected with 403. Requests with no `Origin` (the
-CLI, curl) are unaffected.
+Each person clones the repo and runs the installer. Everyone gets their own
+board and database. There is no sync, and the server only listens on
+localhost, so nothing is shared by accident.
+
+If your machine sits behind a corporate proxy that rewrites TLS, `bun install`
+may fail with a certificate error. Point bun at your CA once:
+
+```sh
+bun install --cafile "/path/to/your/corporate-ca.pem"
+```
 
 ## Uninstall
 
 ```sh
-bun run scripts/uninstall.ts            # unloads the launchd agent, unlinks the CLI, removes the skill symlink
-bun run scripts/uninstall.ts --dry-run  # preview only
+bun run scripts/uninstall.ts
 ```
+
+Stops and removes the login service, unlinks the CLI, and removes the skill
+symlink. Your database at `~/.brain/brain.db` is left in place; delete it
+yourself if you want a clean slate.
+
+## For developers
+
+Bun workspace with four packages:
+
+| Package | What |
+|---|---|
+| `packages/shared` | Types and zod schemas. The contract everything else follows. |
+| `packages/server` | Hono on Bun, `bun:sqlite`, server-sent events, static serving, notifications. |
+| `packages/web` | Vite, React, Tailwind, shadcn, dnd-kit, Lexical, PWA. |
+| `packages/cli` | The `brain` command. Talks to the server over HTTP. |
+
+```sh
+bun run dev          # server in watch mode + Vite dev server with /api proxied
+bun run test         # bun test across the workspace
+bun run typecheck
+bun run build        # builds the web bundle the server serves
+```
+
+Design decisions and the API contract are in `docs/PLAN.md`. The server is
+localhost-only and unauthenticated. Writes carrying an `Origin` header from
+any host other than localhost are rejected, which stops random web pages from
+poking at your board.
