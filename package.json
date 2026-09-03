@@ -1,0 +1,18 @@
+{
+  "name": "brain",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter './packages/web' build",
+    "start": "bun run packages/server/src/index.ts",
+    "test": "bun test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "install:brain": "bun run scripts/install.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}
