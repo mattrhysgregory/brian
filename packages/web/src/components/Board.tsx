@@ -5,11 +5,29 @@ import {
   KeyboardSensor,
   PointerSensor,
   closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+
+/**
+ * Resolve drops against columns only. Cards inside neighbouring columns have
+ * corners much closer to the pointer than an empty column's corners, so
+ * plain closestCorners could never land in an empty column. Pointer-within
+ * wins when there is a pointer; the distance fallback keeps keyboard drags
+ * (which have no pointer coordinates) working.
+ */
+const columnCollision: CollisionDetection = (args) => {
+  const columns = args.droppableContainers.filter(
+    (c) => c.data.current?.type === "column",
+  );
+  const within = pointerWithin({ ...args, droppableContainers: columns });
+  if (within.length > 0) return within;
+  return closestCorners({ ...args, droppableContainers: columns });
+};
 import { STATUS_LABELS, STATUSES, type Issue, type Status } from "@brian/shared";
 import { boardCoordinateGetter } from "@/lib/boardKeyboard";
 import { Column } from "./Column";
@@ -83,7 +101,7 @@ export function Board({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={columnCollision}
       onDragStart={handleDragStart}
       onDragCancel={() => setActiveId(null)}
       onDragEnd={handleDragEnd}
