@@ -1,5 +1,5 @@
 import { MessageSquare } from "lucide-react";
-import type { Issue } from "@brain/shared";
+import type { Issue } from "@brian/shared";
 import { Badge } from "@/components/ui/badge";
 import { absoluteTime, relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";

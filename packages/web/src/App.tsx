@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Issue, Status } from "@brain/shared";
-import { ATTENTION_STATUSES, STATUSES } from "@brain/shared";
+import type { Issue, Status } from "@brian/shared";
+import { ATTENTION_STATUSES, STATUSES } from "@brian/shared";
 import { api, queryKeys } from "@/lib/api";
 import { useEvents } from "@/lib/useEvents";
 import { useAppBadge } from "@/lib/useAppBadge";

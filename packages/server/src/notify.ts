@@ -1,9 +1,9 @@
-import type { Issue } from "@brain/shared";
+import type { Issue } from "@brian/shared";
 
 export type Notifier = (issue: Issue) => void;
 
 export interface CreateNotifierOptions {
-  /** Master switch. Typically `process.env.BRAIN_NOTIFY !== "0"`. */
+  /** Master switch. Typically `process.env.BRIAN_NOTIFY !== "0"`. */
   enabled: boolean;
   /** Typically `process.platform`; notifications only fire on "darwin". */
   platform: NodeJS.Platform;
@@ -36,7 +36,7 @@ export function createNotifier(options: CreateNotifierOptions): Notifier {
       // interpolated into the AppleScript source, so no quoting/escaping of
       // the issue title or project can break out of the script.
       const script = `on run argv
-  display notification (item 1 of argv) with title "brain" subtitle (item 2 of argv)
+  display notification (item 1 of argv) with title "brian" subtitle (item 2 of argv)
 end run`;
       run(["osascript", "-e", script, title, subtitle]);
     } catch {
@@ -48,7 +48,7 @@ end run`;
 /** Default notifier wired from environment/platform, spawning osascript via Bun. */
 export function createDefaultNotifier(): Notifier {
   return createNotifier({
-    enabled: process.env.BRAIN_NOTIFY !== "0",
+    enabled: process.env.BRIAN_NOTIFY !== "0",
     platform: process.platform,
     run: (cmd) => {
       try {

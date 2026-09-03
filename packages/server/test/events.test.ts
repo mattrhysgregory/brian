@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ChangedEvent } from "@brain/shared";
+import type { ChangedEvent } from "@brian/shared";
 import { EventBus } from "../src/events";
 import { addComment, createIssue, makeApp } from "./helpers";
 

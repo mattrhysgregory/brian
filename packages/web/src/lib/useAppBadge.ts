@@ -9,7 +9,7 @@ import { useEffect } from "react";
  */
 export function useAppBadge(count: number) {
   useEffect(() => {
-    document.title = count > 0 ? `(${count}) brain` : "brain";
+    document.title = count > 0 ? `(${count}) brian` : "brian";
   }, [count]);
 
   useEffect(() => {

@@ -1,9 +1,9 @@
-import { DEFAULT_PORT } from "@brain/shared";
+import { DEFAULT_PORT } from "@brian/shared";
 import { createApp } from "./app";
 import { createDb, defaultDbPath } from "./db";
 import { createDefaultNotifier } from "./notify";
 
-const port = Number(process.env.BRAIN_PORT ?? DEFAULT_PORT);
+const port = Number(process.env.BRIAN_PORT ?? DEFAULT_PORT);
 const dbPath = defaultDbPath();
 
 const db = createDb(dbPath);
@@ -16,4 +16,4 @@ const server = Bun.serve({
   idleTimeout: 0,
 });
 
-console.log(`brain listening on http://${server.hostname}:${server.port}  (db: ${dbPath})`);
+console.log(`brian listening on http://${server.hostname}:${server.port}  (db: ${dbPath})`);

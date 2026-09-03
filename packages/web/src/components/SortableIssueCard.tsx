@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
-import type { Issue } from "@brain/shared";
+import type { Issue } from "@brian/shared";
 import { IssueCard } from "./IssueCard";
 
 export function SortableIssueCard({

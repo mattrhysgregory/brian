@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { STATUS_LABELS, STATUSES, type Status, type UpdateIssue } from "@brain/shared";
+import { STATUS_LABELS, STATUSES, type Status, type UpdateIssue } from "@brian/shared";
 import { api, queryKeys } from "@/lib/api";
 import { absoluteTime } from "@/lib/time";
 import { Button } from "@/components/ui/button";

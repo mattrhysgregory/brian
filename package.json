@@ -1,5 +1,5 @@
 {
-  "name": "brain",
+  "name": "brian",
   "private": true,
   "type": "module",
   "workspaces": ["packages/*"],
@@ -9,7 +9,7 @@
     "start": "bun run packages/server/src/index.ts",
     "test": "bun test",
     "typecheck": "bun run --filter '*' typecheck",
-    "install:brain": "bun run scripts/install.ts"
+    "install:brian": "bun run scripts/install.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

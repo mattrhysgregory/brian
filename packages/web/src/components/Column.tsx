@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { MoreHorizontal } from "lucide-react";
-import type { Issue, Status } from "@brain/shared";
-import { STATUS_LABELS } from "@brain/shared";
+import type { Issue, Status } from "@brian/shared";
+import { STATUS_LABELS } from "@brian/shared";
 import { SortableIssueCard } from "./SortableIssueCard";
 import { Button } from "@/components/ui/button";
 import {

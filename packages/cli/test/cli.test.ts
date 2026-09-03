@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { AttentionIssue, Comment, Issue } from "@brain/shared";
+import type { AttentionIssue, Comment, Issue } from "@brian/shared";
 import { run } from "../src/cli";
 
 const BASE_URL = "http://localhost:4400";
@@ -10,7 +10,7 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
     title: "Fix the thing",
     description: null,
     status: "todo",
-    project: "brain",
+    project: "brian",
     created_by: "agent",
     created_at: "2026-09-03T10:00:00.000Z",
     updated_at: "2026-09-03T10:00:00.000Z",
@@ -55,12 +55,12 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-describe("brain add", () => {
+describe("brian add", () => {
   test("posts to /api/issues and prints id + title", async () => {
     const issue = makeIssue({ id: 42, title: "New issue" });
     const { io, captured } = makeIo(() => jsonResponse(issue));
 
-    const code = await run(["add", "New issue", "--project", "brain"], io);
+    const code = await run(["add", "New issue", "--project", "brian"], io);
 
     expect(code).toBe(0);
     expect(captured.calls).toHaveLength(1);
@@ -71,7 +71,7 @@ describe("brain add", () => {
       title: "New issue",
       description: null,
       status: undefined,
-      project: "brain",
+      project: "brian",
       created_by: "agent",
     });
     expect(captured.stdout).toEqual(["#42 New issue"]);
@@ -94,7 +94,7 @@ describe("brain add", () => {
   });
 });
 
-describe("brain list", () => {
+describe("brian list", () => {
   test("GET /api/issues, hides resolved by default", async () => {
     const issues = [
       makeIssue({ id: 1, status: "todo" }),
@@ -145,7 +145,7 @@ function makeAttentionIssue(overrides: Partial<AttentionIssue> = {}): AttentionI
   return { ...makeIssue(), latest_comment: null, ...overrides };
 }
 
-describe("brain attention", () => {
+describe("brian attention", () => {
   test("renders the latest comment inlined by the server, with no extra fetches", async () => {
     const issues = [
       makeAttentionIssue({ id: 5, status: "blocked", latest_comment: makeComment() }),
@@ -181,13 +181,13 @@ describe("brain attention", () => {
 
   test("--project filters client-side", async () => {
     const issues = [
-      makeAttentionIssue({ id: 5, project: "brain", title: "keep me" }),
+      makeAttentionIssue({ id: 5, project: "brian", title: "keep me" }),
       makeAttentionIssue({ id: 6, project: "other", title: "drop me" }),
       makeAttentionIssue({ id: 7, project: null, title: "also drop" }),
     ];
     const { io, captured } = makeIo(() => jsonResponse(issues));
 
-    const code = await run(["attention", "--project", "brain", "--json"], io);
+    const code = await run(["attention", "--project", "brian", "--json"], io);
     expect(code).toBe(0);
     expect(captured.calls).toHaveLength(1);
     expect(JSON.parse(captured.stdout[0]).map((i: Issue) => i.id)).toEqual([5]);
@@ -195,11 +195,11 @@ describe("brain attention", () => {
 
   test("--project also filters the table output", async () => {
     const issues = [
-      makeAttentionIssue({ id: 5, project: "brain", title: "keep me" }),
+      makeAttentionIssue({ id: 5, project: "brian", title: "keep me" }),
       makeAttentionIssue({ id: 6, project: "other", title: "drop me" }),
     ];
     const { io, captured } = makeIo(() => jsonResponse(issues));
-    await run(["attention", "--project", "brain"], io);
+    await run(["attention", "--project", "brian"], io);
     expect(captured.stdout[0]).toContain("keep me");
     expect(captured.stdout[0]).not.toContain("drop me");
   });
@@ -216,18 +216,18 @@ describe("flag parsing", () => {
 
   test("a dashed --desc value is not mistaken for another flag", async () => {
     const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
-    await run(["add", "x", "--desc", "--project", "--project", "brain"], io);
+    await run(["add", "x", "--desc", "--project", "--project", "brian"], io);
     const body = JSON.parse(captured.calls[0].init?.body as string);
     expect(body.description).toBe("--project");
-    expect(body.project).toBe("brain");
+    expect(body.project).toBe("brian");
   });
 
   test("--flag=value form is supported", async () => {
     const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
-    await run(["add", "x", "--desc=--- ctx", "--project=brain", "--status=blocked"], io);
+    await run(["add", "x", "--desc=--- ctx", "--project=brian", "--status=blocked"], io);
     const body = JSON.parse(captured.calls[0].init?.body as string);
     expect(body.description).toBe("--- ctx");
-    expect(body.project).toBe("brain");
+    expect(body.project).toBe("brian");
     expect(body.status).toBe("blocked");
   });
 
@@ -251,7 +251,7 @@ describe("flag parsing", () => {
   });
 });
 
-describe("brain move", () => {
+describe("brian move", () => {
   test("PATCHes status, accepts aliases", async () => {
     const issue = makeIssue({ id: 3, status: "needs_attention" });
     const { io, captured } = makeIo(() => jsonResponse(issue));
@@ -280,7 +280,7 @@ describe("brain move", () => {
   });
 });
 
-describe("brain clear", () => {
+describe("brian clear", () => {
   test("DELETEs /api/issues?status= and prints the count, accepts aliases", async () => {
     const { io, captured } = makeIo(() => jsonResponse({ deleted: 3 }));
     const code = await run(["clear", "done"], io);
@@ -301,7 +301,7 @@ describe("brain clear", () => {
     const { io, captured } = makeIo(() => jsonResponse({}));
     const code = await run(["clear"], io);
     expect(code).toBe(1);
-    expect(captured.stderr[0]).toContain("brain clear <status>");
+    expect(captured.stderr[0]).toContain("brian clear <status>");
   });
 
   test("unknown status is a usage error, exit 1", async () => {
@@ -319,7 +319,7 @@ describe("brain clear", () => {
   });
 });
 
-describe("brain comment", () => {
+describe("brian comment", () => {
   test("posts comment body", async () => {
     const comment: Comment = {
       id: 9,
@@ -364,7 +364,7 @@ describe("unreachable server", () => {
     const code = await run(["list"], io);
     expect(code).toBe(2);
     expect(captured.stderr[0]).toBe(
-      `brain: server not running at ${BASE_URL} (start it with: bun run start in <repo>, or check launchd)`,
+      `brian: server not running at ${BASE_URL} (start it with: bun run start in <repo>, or check launchd)`,
     );
   });
 });
@@ -374,13 +374,13 @@ describe("api errors", () => {
     const { io, captured } = makeIo(() => jsonResponse({ error: "title is too long" }, 400));
     const code = await run(["add", "Some title"], io);
     expect(code).toBe(1);
-    expect(captured.stderr[0]).toBe("brain: title is too long");
+    expect(captured.stderr[0]).toBe("brian: title is too long");
   });
 
   test("propagates non-2xx error message", async () => {
     const { io, captured } = makeIo(() => jsonResponse({ error: "issue not found" }, 404));
     const code = await run(["show", "999"], io);
     expect(code).toBe(1);
-    expect(captured.stderr[0]).toBe("brain: issue not found");
+    expect(captured.stderr[0]).toBe("brian: issue not found");
   });
 });

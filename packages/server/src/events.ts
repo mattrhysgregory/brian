@@ -1,4 +1,4 @@
-import type { ChangedEvent } from "@brain/shared";
+import type { ChangedEvent } from "@brian/shared";
 
 export type ChangedListener = (event: ChangedEvent) => void;
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createNotifier } from "../src/notify";
 import { addComment, createIssue, makeApp } from "./helpers";
-import type { Issue } from "@brain/shared";
+import type { Issue } from "@brian/shared";
 
 function makeIssue(overrides: Partial<Issue> = {}): Issue {
   return {
@@ -32,8 +32,8 @@ describe("createNotifier", () => {
   test("includes project in the subtitle when present", () => {
     const calls: string[][] = [];
     const notify = createNotifier({ enabled: true, platform: "darwin", run: (cmd) => calls.push(cmd) });
-    notify(makeIssue({ id: 6, status: "needs_attention", project: "brain" }));
-    expect(calls[0]).toContain("Needs attention · brain");
+    notify(makeIssue({ id: 6, status: "needs_attention", project: "brian" }));
+    expect(calls[0]).toContain("Needs attention · brian");
   });
 
   test("does not fire for todo or resolved", () => {

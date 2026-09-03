@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Installs brain locally:
+ * Installs brian locally:
  *  - builds the web bundle (unless --no-build)
- *  - symlinks .claude/skills/brain -> ~/.claude/skills/brain
- *  - links the `brain` CLI globally via `bun link`
+ *  - symlinks .claude/skills/brian -> ~/.claude/skills/brian
+ *  - links the `brian` CLI globally via `bun link`
  *  - installs + (re)loads a launchd LaunchAgent that runs the server at login
  *    (macOS only; elsewhere it prints how to run the server yourself)
  *
@@ -43,18 +43,18 @@ async function buildWeb() {
     log("skip web build (--no-build)");
     return;
   }
-  await run([BUN_BIN, "run", "--filter", "@brain/web", "build"], { cwd: REPO_ROOT });
+  await run([BUN_BIN, "run", "--filter", "@brian/web", "build"], { cwd: REPO_ROOT });
 }
 
 // --- 2. symlink skill ---
 function linkSkill() {
-  const src = join(REPO_ROOT, ".claude", "skills", "brain");
+  const src = join(REPO_ROOT, ".claude", "skills", "brian");
   const destDir = join(HOME, ".claude", "skills");
-  const dest = join(destDir, "brain");
+  const dest = join(destDir, "brian");
 
   if (existsSync(dest) || lstatExists(dest)) {
     const st = lstatSync(dest);
-    if (st.isSymlink()) {
+    if (st.isSymbolicLink()) {
       log(`remove existing symlink ${dest} -> ${safeReadlink(dest)}`);
       if (!dryRun) unlinkSync(dest);
     } else {
@@ -90,15 +90,15 @@ function safeReadlink(p: string): string {
 
 // --- 3. link CLI globally ---
 async function linkCli() {
-  // `bun link` inside packages/cli is enough to create the global `brain` bin.
-  // Running `bun link @brain/cli` in the repo root would only dirty the root
+  // `bun link` inside packages/cli is enough to create the global `brian` bin.
+  // Running `bun link @brian/cli` in the repo root would only dirty the root
   // package.json / bun.lock.
   const cliDir = join(REPO_ROOT, "packages", "cli");
   await run([BUN_BIN, "link"], { cwd: cliDir });
 
-  log("verify: brain --help");
+  log("verify: brian --help");
   if (!dryRun) {
-    const proc = Bun.spawn([join(BUN_BIN_DIR, "brain"), "--help"], {
+    const proc = Bun.spawn([join(BUN_BIN_DIR, "brian"), "--help"], {
       stdout: "pipe",
       stderr: "pipe",
       env: { ...process.env, PATH: `${BUN_BIN_DIR}:${process.env.PATH ?? ""}` },
@@ -106,16 +106,16 @@ async function linkCli() {
     const code = await proc.exited;
     if (code !== 0) {
       const err = await new Response(proc.stderr).text();
-      throw new Error(`\`brain --help\` failed after linking:\n${err}`);
+      throw new Error(`\`brian --help\` failed after linking:\n${err}`);
     }
-    console.log("brain --help OK");
+    console.log("brian --help OK");
   }
 }
 
 // --- 4. launchd plist ---
-const PLIST_LABEL = "com.brain.server";
+const PLIST_LABEL = "com.brian.server";
 const PLIST_PATH = join(HOME, "Library", "LaunchAgents", `${PLIST_LABEL}.plist`);
-const LOG_DIR = join(HOME, ".brain", "logs");
+const LOG_DIR = join(HOME, ".brian", "logs");
 
 /** XML-escape a string for safe interpolation into the plist. */
 function xml(value: string): string {
@@ -133,7 +133,7 @@ function plistEnvEntries(): string {
   };
   // Carry the caller's overrides through, so the login service uses the same
   // port and database as the shell the installer ran in.
-  for (const key of ["BRAIN_PORT", "BRAIN_DB"] as const) {
+  for (const key of ["BRIAN_PORT", "BRIAN_DB"] as const) {
     const value = process.env[key];
     if (value) env[key] = value;
   }
@@ -176,7 +176,7 @@ ${plistEnvEntries()}
 async function installLaunchAgent() {
   if (process.platform !== "darwin") {
     console.log(
-      `skip: launchd is macOS-only (platform=${process.platform}). Start the server yourself with \`bun run start\` in ${REPO_ROOT}, or wrap that command in a systemd user unit (~/.config/systemd/user/brain.service) and \`systemctl --user enable --now brain\`.`,
+      `skip: launchd is macOS-only (platform=${process.platform}). Start the server yourself with \`bun run start\` in ${REPO_ROOT}, or wrap that command in a systemd user unit (~/.config/systemd/user/brian.service) and \`systemctl --user enable --now brian\`.`,
     );
     return;
   }
@@ -206,7 +206,7 @@ async function installLaunchAgent() {
 }
 
 async function waitForHealth() {
-  const base = process.env.BRAIN_URL ?? `http://localhost:${process.env.BRAIN_PORT ?? "4400"}`;
+  const base = process.env.BRIAN_URL ?? `http://localhost:${process.env.BRIAN_PORT ?? "4400"}`;
   const url = `${base}/api/health`;
   log(`wait for ${url}`);
   if (dryRun) return;
@@ -228,7 +228,7 @@ async function waitForHealth() {
 }
 
 async function main() {
-  console.log(`brain install${dryRun ? " (dry run)" : ""}`);
+  console.log(`brian install${dryRun ? " (dry run)" : ""}`);
   await buildWeb();
   linkSkill();
   await linkCli();

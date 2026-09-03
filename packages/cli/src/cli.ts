@@ -1,5 +1,5 @@
-import { DEFAULT_BASE_URL } from "@brain/shared";
-import type { AttentionIssue, ClearResult, Comment, Issue, IssueWithComments, Status } from "@brain/shared";
+import { DEFAULT_BASE_URL } from "@brian/shared";
+import type { AttentionIssue, ClearResult, Comment, Issue, IssueWithComments, Status } from "@brian/shared";
 import { ApiRequestError, ServerUnreachableError, apiRequest } from "./api";
 import { formatAttention, formatIssueDetail, formatIssueList } from "./format";
 
@@ -80,24 +80,24 @@ function flagStr(flags: Map<string, string | boolean>, key: string): string | un
   return typeof v === "string" ? v : undefined;
 }
 
-const USAGE = `brain — tiny local kanban CLI
+const USAGE = `brian — tiny local kanban CLI
 
 Usage:
-  brain add <title> [--desc <md>] [--desc-file <path>|-] [--status <s>] [--project <p>] [--author <a>]
-  brain list [--status <s>] [--project <p>] [--all] [--json]
-  brain attention [--project <p>] [--json]
-  brain show <id> [--json]
-  brain move <id> <status>
-  brain clear <status> [--json]
-  brain edit <id> [--title <t>] [--desc <md>|--desc-file <path>|-] [--project <p>]
-  brain comment <id> <body|-> [--author <a>]
-  brain rm <id>
-  brain rm-comment <id>
-  brain open
-  brain --help
+  brian add <title> [--desc <md>] [--desc-file <path>|-] [--status <s>] [--project <p>] [--author <a>]
+  brian list [--status <s>] [--project <p>] [--all] [--json]
+  brian attention [--project <p>] [--json]
+  brian show <id> [--json]
+  brian move <id> <status>
+  brian clear <status> [--json]
+  brian edit <id> [--title <t>] [--desc <md>|--desc-file <path>|-] [--project <p>]
+  brian comment <id> <body|-> [--author <a>]
+  brian rm <id>
+  brian rm-comment <id>
+  brian open
+  brian --help
 
 Statuses: todo, needs_attention (alias attention), blocked, resolved (alias done)
-Env: BRAIN_URL (default ${DEFAULT_BASE_URL})
+Env: BRIAN_URL (default ${DEFAULT_BASE_URL})
 `;
 
 async function resolveDescription(
@@ -133,7 +133,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
     switch (cmd) {
       case "add": {
         const title = positional[0];
-        if (!title) throw new UsageError("brain add <title>");
+        if (!title) throw new UsageError("brian add <title>");
         const description = await resolveDescription(io, flags);
         const status = flagStr(flags, "status") ? resolveStatus(flagStr(flags, "status")!) : undefined;
         const project = flagStr(flags, "project");
@@ -184,7 +184,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
 
       case "show": {
         const id = positional[0];
-        if (!id) throw new UsageError("brain show <id>");
+        if (!id) throw new UsageError("brian show <id>");
         const issue = await apiRequest<IssueWithComments>(io.baseUrl, `/api/issues/${id}`);
         if (json) io.stdout(JSON.stringify(issue));
         else io.stdout(formatIssueDetail(issue));
@@ -194,7 +194,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
       case "move": {
         const id = positional[0];
         const statusInput = positional[1];
-        if (!id || !statusInput) throw new UsageError("brain move <id> <status>");
+        if (!id || !statusInput) throw new UsageError("brian move <id> <status>");
         const status = resolveStatus(statusInput);
         const issue = await apiRequest<Issue>(io.baseUrl, `/api/issues/${id}`, {
           method: "PATCH",
@@ -207,7 +207,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
 
       case "clear": {
         const statusInput = positional[0];
-        if (!statusInput) throw new UsageError("brain clear <status>");
+        if (!statusInput) throw new UsageError("brian clear <status>");
         const status = resolveStatus(statusInput);
         const result = await apiRequest<ClearResult>(io.baseUrl, "/api/issues", {
           method: "DELETE",
@@ -220,7 +220,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
 
       case "edit": {
         const id = positional[0];
-        if (!id) throw new UsageError("brain edit <id>");
+        if (!id) throw new UsageError("brian edit <id>");
         const body: Record<string, unknown> = {};
         const title = flagStr(flags, "title");
         if (title !== undefined) body.title = title;
@@ -230,7 +230,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
         // An explicitly empty --project clears it, matching the web UI.
         if (project !== undefined) body.project = project || null;
         if (Object.keys(body).length === 0) {
-          throw new UsageError("brain edit <id> requires at least one of --title --desc/--desc-file --project");
+          throw new UsageError("brian edit <id> requires at least one of --title --desc/--desc-file --project");
         }
         const issue = await apiRequest<Issue>(io.baseUrl, `/api/issues/${id}`, {
           method: "PATCH",
@@ -244,7 +244,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
       case "comment": {
         const id = positional[0];
         const bodyArg = positional[1];
-        if (!id || bodyArg === undefined) throw new UsageError("brain comment <id> <body|->");
+        if (!id || bodyArg === undefined) throw new UsageError("brian comment <id> <body|->");
         const body = bodyArg === "-" ? await io.readStdin() : bodyArg;
         const author = flagStr(flags, "author") ?? "agent";
         const comment = await apiRequest<Comment>(io.baseUrl, `/api/issues/${id}/comments`, {
@@ -258,7 +258,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
 
       case "rm": {
         const id = positional[0];
-        if (!id) throw new UsageError("brain rm <id>");
+        if (!id) throw new UsageError("brian rm <id>");
         await apiRequest<void>(io.baseUrl, `/api/issues/${id}`, { method: "DELETE" });
         if (json) io.stdout(JSON.stringify({ ok: true }));
         else io.stdout(`#${id} deleted`);
@@ -267,7 +267,7 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
 
       case "rm-comment": {
         const id = positional[0];
-        if (!id) throw new UsageError("brain rm-comment <id>");
+        if (!id) throw new UsageError("brian rm-comment <id>");
         await apiRequest<void>(io.baseUrl, `/api/comments/${id}`, { method: "DELETE" });
         if (json) io.stdout(JSON.stringify({ ok: true }));
         else io.stdout(`comment #${id} deleted`);
@@ -282,25 +282,25 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
       }
 
       default:
-        io.stderr(`brain: unknown command "${cmd}"\n\n${USAGE.trimEnd()}`);
+        io.stderr(`brian: unknown command "${cmd}"\n\n${USAGE.trimEnd()}`);
         return 1;
     }
   } catch (err) {
     if (err instanceof ServerUnreachableError) {
       io.stderr(
-        `brain: server not running at ${err.url} (start it with: bun run start in <repo>, or check launchd)`,
+        `brian: server not running at ${err.url} (start it with: bun run start in <repo>, or check launchd)`,
       );
       return 2;
     }
     if (err instanceof ApiRequestError) {
-      io.stderr(`brain: ${err.message}`);
+      io.stderr(`brian: ${err.message}`);
       return 1;
     }
     if (err instanceof UsageError) {
-      io.stderr(`brain: ${err.message}`);
+      io.stderr(`brian: ${err.message}`);
       return 1;
     }
-    io.stderr(`brain: ${err instanceof Error ? err.message : String(err)}`);
+    io.stderr(`brian: ${err instanceof Error ? err.message : String(err)}`);
     return 1;
   }
 }

@@ -10,7 +10,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { STATUS_LABELS, STATUSES, type Issue, type Status } from "@brain/shared";
+import { STATUS_LABELS, STATUSES, type Issue, type Status } from "@brian/shared";
 import { boardCoordinateGetter } from "@/lib/boardKeyboard";
 import { Column } from "./Column";
 import { IssueCard } from "./IssueCard";

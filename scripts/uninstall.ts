@@ -2,8 +2,8 @@
 /**
  * Reverses `scripts/install.ts`:
  *  - unloads + removes the launchd LaunchAgent
- *  - unlinks the global `brain` CLI
- *  - removes the ~/.claude/skills/brain symlink (only if it points into this repo)
+ *  - unlinks the global `brian` CLI
+ *  - removes the ~/.claude/skills/brian symlink (only if it points into this repo)
  *
  * Usage: bun run scripts/uninstall.ts [--dry-run]
  */
@@ -33,7 +33,7 @@ async function run(cmd: string[], opts: { cwd?: string; ignoreFailure?: boolean 
   }
 }
 
-const PLIST_LABEL = "com.brain.server";
+const PLIST_LABEL = "com.brian.server";
 const PLIST_PATH = join(HOME, "Library", "LaunchAgents", `${PLIST_LABEL}.plist`);
 
 async function removeLaunchAgent() {
@@ -68,8 +68,8 @@ async function unlinkCli() {
 }
 
 function unlinkSkill() {
-  const dest = join(HOME, ".claude", "skills", "brain");
-  const expectedSrc = join(REPO_ROOT, ".claude", "skills", "brain");
+  const dest = join(HOME, ".claude", "skills", "brian");
+  const expectedSrc = join(REPO_ROOT, ".claude", "skills", "brian");
 
   if (!existsSync(dest) && !lstatExists(dest)) {
     log(`${dest} does not exist, skipping`);
@@ -77,7 +77,7 @@ function unlinkSkill() {
   }
 
   const st = lstatSync(dest);
-  if (!st.isSymlink()) {
+  if (!st.isSymbolicLink()) {
     console.warn(`skip: ${dest} is not a symlink (leaving it in place)`);
     return;
   }
@@ -102,7 +102,7 @@ function lstatExists(p: string): boolean {
 }
 
 async function main() {
-  console.log(`brain uninstall${dryRun ? " (dry run)" : ""}`);
+  console.log(`brian uninstall${dryRun ? " (dry run)" : ""}`);
   await removeLaunchAgent();
   await unlinkCli();
   unlinkSkill();

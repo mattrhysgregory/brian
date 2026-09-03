@@ -1,4 +1,4 @@
-import type { ApiError } from "@brain/shared";
+import type { ApiError } from "@brian/shared";
 
 export class ServerUnreachableError extends Error {
   constructor(public readonly url: string) {

@@ -1,6 +1,6 @@
-# brain CLI reference
+# brian CLI reference
 
-Talks to the local brain HTTP API at `BRAIN_URL` (default
+Talks to the local brian HTTP API at `BRIAN_URL` (default
 `http://localhost:4400`). Every command supports `--json`, which prints the
 raw API response JSON to stdout and nothing else — use it for anything
 scripted. Without `--json`, output is a compact human-readable table or
@@ -13,10 +13,10 @@ Statuses: `todo`, `needs_attention`, `blocked`, `resolved`.
 Aliases accepted anywhere a status is expected: `attention` →
 `needs_attention`, `done` → `resolved`.
 
-## brain add
+## brian add
 
 ```
-brain add <title> [--desc <md>] [--desc-file <path>|-] [--status <s>] [--project <p>] [--author <a>]
+brian add <title> [--desc <md>] [--desc-file <path>|-] [--status <s>] [--project <p>] [--author <a>]
 ```
 
 Creates an issue. `--desc-file -` reads the description from stdin (useful
@@ -24,20 +24,20 @@ for multi-line/markdown descriptions piped from a heredoc). `--author`
 defaults to `agent`. `--status` defaults to `todo` server-side. Prints
 `#<id> <title>` (or the full issue JSON with `--json`).
 
-## brain list
+## brian list
 
 ```
-brain list [--status <s>] [--project <p>] [--all] [--json]
+brian list [--status <s>] [--project <p>] [--all] [--json]
 ```
 
 Lists issues, newest-updated first. By default hides `resolved` issues
 unless `--status` is explicitly given or `--all` is passed. Table columns:
 id, status, project, title, updated.
 
-## brain attention
+## brian attention
 
 ```
-brain attention [--project <p>] [--json]
+brian attention [--project <p>] [--json]
 ```
 
 Lists issues in `needs_attention` or `blocked`, newest activity first.
@@ -45,87 +45,87 @@ Each issue carries a `latest_comment` (the most recent comment, or
 `null`); the table view shows an excerpt of it. `--project <p>` narrows
 the list to one project. `--json` returns the raw array.
 
-## brain show
+## brian show
 
 ```
-brain show <id> [--json]
+brian show <id> [--json]
 ```
 
 Full issue: title, status, project, author, timestamps, description, and
 the full comment thread in order. Markdown is printed as-is (not rendered).
 
-## brain move
+## brian move
 
 ```
-brain move <id> <status>
+brian move <id> <status>
 ```
 
 Updates only the status. Accepts aliases (`attention`, `done`).
 
-## brain clear
+## brian clear
 
 ```
-brain clear <status> [--json]
+brian clear <status> [--json]
 ```
 
 Deletes **every** issue in a column (cascades their comments) and prints
 `deleted N issue(s) from <status>`. Accepts the same status aliases as
-`brain move`. This is destructive and irreversible — agents should
+`brian move`. This is destructive and irreversible — agents should
 generally not clear columns on their own initiative; only run it when a
 human has explicitly asked to clear a column.
 
-## brain edit
+## brian edit
 
 ```
-brain edit <id> [--title <t>] [--desc <md>|--desc-file <path>|-] [--project <p>]
+brian edit <id> [--title <t>] [--desc <md>|--desc-file <path>|-] [--project <p>]
 ```
 
 Partial update — pass only the fields you want to change. At least one of
 `--title`, `--desc`/`--desc-file`, `--project` is required.
 
-## brain comment
+## brian comment
 
 ```
-brain comment <id> <body|-> [--author <a>]
+brian comment <id> <body|-> [--author <a>]
 ```
 
 Adds a comment. Pass `-` as the body to read it from stdin. `--author`
 defaults to `agent`.
 
-## brain rm / brain rm-comment
+## brian rm / brian rm-comment
 
 ```
-brain rm <id>
-brain rm-comment <id>
+brian rm <id>
+brian rm-comment <id>
 ```
 
 Hard-deletes an issue (cascades its comments) or a single comment.
 
-## brain open
+## brian open
 
 ```
-brain open
+brian open
 ```
 
-Opens the board (`BRAIN_URL`) in the default browser via `open`.
+Opens the board (`BRIAN_URL`) in the default browser via `open`.
 
 ## Environment
 
-- `BRAIN_URL` — base URL of the brain API/web server. Default
+- `BRIAN_URL` — base URL of the brian API/web server. Default
   `http://localhost:4400`.
 
 ## Examples
 
 ```sh
-brain add "Review the new auth middleware" \
+brian add "Review the new auth middleware" \
   --desc "Swapped session cookies for JWT in packages/server/src/auth.ts. Please sanity check expiry handling." \
-  --status needs_attention --project brain --author claude-code
+  --status needs_attention --project brian --author claude-code
 
 echo "Need a Stripe test-mode secret key to finish billing integration." | \
-  brain add "Need Stripe test key" --desc-file - --status blocked --project my-app --author claude-code
+  brian add "Need Stripe test key" --desc-file - --status blocked --project my-app --author claude-code
 
-brain attention --project brain
-brain show 12 --json
-brain comment 12 "Fixed per your feedback, PTAL" --author claude-code
-brain move 12 resolved
+brian attention --project brian
+brian show 12 --json
+brian comment 12 "Fixed per your feedback, PTAL" --author claude-code
+brian move 12 resolved
 ```

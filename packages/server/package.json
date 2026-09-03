@@ -1,5 +1,5 @@
 {
-  "name": "@brain/server",
+  "name": "@brian/server",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
@@ -9,7 +9,7 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@brain/shared": "workspace:*",
+    "@brian/shared": "workspace:*",
     "hono": "^4.6.0"
   },
   "devDependencies": {

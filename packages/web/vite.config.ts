@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: `http://localhost:${process.env.BRAIN_PORT ?? 4400}`,
+        target: `http://localhost:${process.env.BRIAN_PORT ?? 4400}`,
         changeOrigin: true,
         // SSE needs an un-buffered, long-lived connection.
         ws: false,
@@ -27,8 +27,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
-        name: "brain",
-        short_name: "brain",
+        name: "brian",
+        short_name: "brian",
         description: "A tiny local Kanban for work that needs a human in the loop.",
         start_url: "/",
         scope: "/",
@@ -61,7 +61,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
             handler: "NetworkFirst",
             options: {
-              cacheName: "brain-api",
+              cacheName: "brian-api",
               networkTimeoutSeconds: 10,
               // Only ever a last-resort offline fallback, expired aggressively.
               expiration: { maxEntries: 32, maxAgeSeconds: 60 },

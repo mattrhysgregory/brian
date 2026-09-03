@@ -14,7 +14,7 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
   return (
     <LexicalComposer
       initialConfig={{
-        namespace: "brain-view",
+        namespace: "brian-view",
         theme: EDITOR_THEME,
         nodes: EDITOR_NODES,
         editable: false,

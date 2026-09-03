@@ -129,7 +129,7 @@ export function MarkdownEditor({
   return (
     <LexicalComposer
       initialConfig={{
-        namespace: "brain-description",
+        namespace: "brian-description",
         theme: EDITOR_THEME,
         nodes: EDITOR_NODES,
         onError: (error) => console.error(error),

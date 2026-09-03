@@ -1,4 +1,4 @@
-import type { Comment, Issue, IssueWithComments } from "@brain/shared";
+import type { Comment, Issue, IssueWithComments } from "@brian/shared";
 
 export function table(rows: string[][], headers: string[]): string {
   const all = [headers, ...rows];

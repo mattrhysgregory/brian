@@ -1,7 +1,7 @@
 import { createApp } from "../src/app";
 import { createDb } from "../src/db";
 import { EventBus } from "../src/events";
-import type { ChangedEvent, Comment, Issue, IssueWithComments } from "@brain/shared";
+import type { ChangedEvent, Comment, Issue, IssueWithComments } from "@brian/shared";
 
 export function makeApp() {
   const db = createDb(":memory:");

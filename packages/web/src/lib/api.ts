@@ -7,7 +7,7 @@ import type {
   IssueWithComments,
   Status,
   UpdateIssue,
-} from "@brain/shared";
+} from "@brian/shared";
 
 /**
  * All requests are same-origin: in production the Bun server serves both the
@@ -33,7 +33,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: init?.body ? { "content-type": "application/json", ...init?.headers } : init?.headers,
     });
   } catch {
-    throw new ApiRequestError(0, "Cannot reach the brain server.");
+    throw new ApiRequestError(0, "Cannot reach the brian server.");
   }
   if (!res.ok) {
     let message = `Request failed (${res.status})`;

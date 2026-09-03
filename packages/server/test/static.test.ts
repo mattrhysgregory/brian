@@ -5,9 +5,9 @@ import { tmpdir } from "node:os";
 import { createApp } from "../src/app";
 import { createDb } from "../src/db";
 
-const dist = mkdtempSync(join(tmpdir(), "brain-dist-"));
+const dist = mkdtempSync(join(tmpdir(), "brian-dist-"));
 mkdirSync(join(dist, "assets"), { recursive: true });
-writeFileSync(join(dist, "index.html"), "<html>brain shell</html>");
+writeFileSync(join(dist, "index.html"), "<html>brian shell</html>");
 writeFileSync(join(dist, "assets", "app.js"), "console.log(1)");
 
 afterAll(() => rmSync(dist, { recursive: true, force: true }));
@@ -25,13 +25,13 @@ describe("static serving", () => {
   test("serves index.html at the root", async () => {
     const res = await app.request("/");
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("brain shell");
+    expect(await res.text()).toContain("brian shell");
   });
 
   test("falls back to the SPA shell for unknown client routes", async () => {
     const res = await app.request("/issues/42");
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("brain shell");
+    expect(await res.text()).toContain("brian shell");
   });
 
   test("api routes are not shadowed by the SPA fallback", async () => {

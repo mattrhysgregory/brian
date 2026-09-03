@@ -1,11 +1,11 @@
 ---
-name: brain
-description: File, update, and check human-in-the-loop tracking issues in the local brain kanban. Use this when you finish autonomous work that needs human review, get blocked on a decision/credentials/missing context, want to leave follow-up work for later, need to check whether a human has replied to something you filed, or the user asks what needs attention / to track a task.
+name: brian
+description: File, update, and check human-in-the-loop tracking issues in the local brian kanban. Use this when you finish autonomous work that needs human review, get blocked on a decision/credentials/missing context, want to leave follow-up work for later, need to check whether a human has replied to something you filed, or the user asks what needs attention / to track a task.
 ---
 
-# brain
+# brian
 
-`brain` is a tiny local kanban CLI for tracking work between you (an agent)
+`brian` is a tiny local kanban CLI for tracking work between you (an agent)
 and the human. Columns: `todo`, `needs_attention`, `blocked`, `resolved`.
 
 Full command reference: `reference.md` in this skill directory.
@@ -32,19 +32,19 @@ Before assuming you're still blocked, or when the user asks "what did I
 say about X", read the issue and its comment thread:
 
 ```
-brain show <id> --json
+brian show <id> --json
 ```
 
 Look at `comments` for entries authored by `me` (the human's default
 author in the UI) that postdate your last comment. If a reply resolves
-the question or unblocks you, act on it and then `brain move <id> resolved`
-(or `brain move <id> done`).
+the question or unblocks you, act on it and then `brian move <id> resolved`
+(or `brian move <id> done`).
 
-Also check `brain attention --json` (or `brain attention` for a human
+Also check `brian attention --json` (or `brian attention` for a human
 skim) at the start of a session or when asked what needs attention — it
 lists everything in `needs_attention` or `blocked` with the latest
 comment inlined as `latest_comment`. Narrow it to the repo you're in
-with `brain attention --project <repo>`.
+with `brian attention --project <repo>`.
 
 ## Finding an issue you filed earlier
 
@@ -52,13 +52,13 @@ You won't remember the id across sessions. Look it up by project rather
 than guessing:
 
 ```
-brain list --project <repo> --json     # find the issue, read its "id"
-brain show <id> --json                 # full description + comment thread
+brian list --project <repo> --json     # find the issue, read its "id"
+brian show <id> --json                 # full description + comment thread
 ```
 
-`brain list` hides `resolved` issues unless you pass `--all` or an
+`brian list` hides `resolved` issues unless you pass `--all` or an
 explicit `--status`. If you only care about open human-in-the-loop
-items, `brain attention --project <repo>` is the shorter path.
+items, `brian attention --project <repo>` is the shorter path.
 
 ## Conventions
 
@@ -78,15 +78,15 @@ items, `brain attention --project <repo>` is the shorter path.
 ## Commands you'll use most
 
 ```
-brain add "<title>" --desc "<markdown>" --status needs_attention --project <repo> --author <name>
-brain add "<title>" --desc-file - --status blocked --project <repo> --author <name>   # pipe description via stdin
-brain attention --project <repo> --json
-brain show <id> --json
-brain comment <id> "<reply>" --author <name>
-brain move <id> resolved
-brain list --project <repo> --json
+brian add "<title>" --desc "<markdown>" --status needs_attention --project <repo> --author <name>
+brian add "<title>" --desc-file - --status blocked --project <repo> --author <name>   # pipe description via stdin
+brian attention --project <repo> --json
+brian show <id> --json
+brian comment <id> "<reply>" --author <name>
+brian move <id> resolved
+brian list --project <repo> --json
 ```
 
 If any command fails because the server isn't reachable, tell the human:
-the local brain server isn't running (`bun run start` in the brain repo,
+the local brian server isn't running (`bun run start` in the brian repo,
 or check the launchd agent), and don't silently drop the update.

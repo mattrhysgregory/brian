@@ -23,7 +23,7 @@ export function TopBar({
 }) {
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-4">
-      <h1 className="text-[13px] font-semibold tracking-tight">brain</h1>
+      <h1 className="text-[13px] font-semibold tracking-tight">brian</h1>
 
       <div className="ml-auto flex items-center gap-2">
         <Select value={project} onValueChange={onProjectChange}>

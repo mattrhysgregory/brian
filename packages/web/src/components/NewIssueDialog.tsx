@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { STATUS_LABELS, STATUSES, type Status } from "@brain/shared";
+import { STATUS_LABELS, STATUSES, type Status } from "@brian/shared";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

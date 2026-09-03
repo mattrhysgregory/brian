@@ -5,9 +5,9 @@ import { homedir } from "node:os";
 
 export type Db = Database;
 
-/** Default on-disk location, overridable with BRAIN_DB. */
+/** Default on-disk location, overridable with BRIAN_DB. */
 export function defaultDbPath(): string {
-  return process.env.BRAIN_DB ?? join(homedir(), ".brain", "brain.db");
+  return process.env.BRIAN_DB ?? join(homedir(), ".brian", "brian.db");
 }
 
 const SCHEMA = `

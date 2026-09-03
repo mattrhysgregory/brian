@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { AttentionIssue, Issue } from "@brain/shared";
+import type { AttentionIssue, Issue } from "@brian/shared";
 import { addComment, createIssue, getIssue, makeApp } from "./helpers";
 
 describe("issues", () => {
@@ -28,14 +28,14 @@ describe("issues", () => {
       title: "deploy",
       description: "# md",
       status: "blocked",
-      project: "brain",
+      project: "brian",
       created_by: "agent",
     });
     expect(issue).toMatchObject({
       title: "deploy",
       description: "# md",
       status: "blocked",
-      project: "brain",
+      project: "brian",
       created_by: "agent",
     });
   });

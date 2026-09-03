@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Comment } from "@brain/shared";
+import type { Comment } from "@brian/shared";
 import { addComment, createIssue, getIssue, makeApp } from "./helpers";
 
 describe("comments", () => {

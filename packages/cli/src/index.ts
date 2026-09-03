@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { DEFAULT_BASE_URL } from "@brain/shared";
+import { DEFAULT_BASE_URL } from "@brian/shared";
 import { run } from "./cli";
 
 async function readStdin(): Promise<string> {
@@ -16,7 +16,7 @@ async function openUrl(url: string): Promise<void> {
 }
 
 const code = await run(process.argv.slice(2), {
-  baseUrl: process.env.BRAIN_URL ?? DEFAULT_BASE_URL,
+  baseUrl: process.env.BRIAN_URL ?? DEFAULT_BASE_URL,
   stdout: (s) => process.stdout.write(s + "\n"),
   stderr: (s) => process.stderr.write(s + "\n"),
   readStdin,

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ChangedEvent } from "@brain/shared";
+import type { ChangedEvent } from "@brian/shared";
 
 /**
  * Subscribes to the server's SSE stream and invalidates the TanStack caches on

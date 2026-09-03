@@ -17,7 +17,7 @@ import {
   type Issue,
   type IssueWithComments,
   type Status,
-} from "@brain/shared";
+} from "@brian/shared";
 import { nowIso, type Db } from "./db";
 import { EventBus } from "./events";
 import type { Notifier } from "./notify";
@@ -301,7 +301,7 @@ export function createApp(db: Db, options: AppOptions = {}) {
   app.all("/api/*", (c) => c.json({ error: "Not found" }, 404));
 
   const notBuilt = (c: Context) =>
-    c.text("brain: the web UI has not been built yet. Run `bun run build` in the repo root.", 503);
+    c.text("brian: the web UI has not been built yet. Run `bun run build` in the repo root.", 503);
 
   const staticFiles = serveStatic({ root: webDist });
   const spaShell = serveStatic({ root: webDist, path: "index.html" });

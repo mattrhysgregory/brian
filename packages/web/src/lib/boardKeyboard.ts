@@ -1,6 +1,6 @@
 import type { KeyboardCoordinateGetter } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { STATUSES, type Status } from "@brain/shared";
+import { STATUSES, type Status } from "@brian/shared";
 
 /**
  * dnd-kit's default sortable coordinate getter only walks items inside the
