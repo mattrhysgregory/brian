@@ -37,6 +37,11 @@ const PLIST_LABEL = "com.brain.server";
 const PLIST_PATH = join(HOME, "Library", "LaunchAgents", `${PLIST_LABEL}.plist`);
 
 async function removeLaunchAgent() {
+  if (process.platform !== "darwin") {
+    console.log(`skip: launchd is macOS-only (platform=${process.platform})`);
+    return;
+  }
+
   const uid = process.getuid?.() ?? 501;
   const domain = `gui/${uid}`;
 

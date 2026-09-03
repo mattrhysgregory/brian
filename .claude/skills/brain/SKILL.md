@@ -43,7 +43,22 @@ the question or unblocks you, act on it and then `brain move <id> resolved`
 Also check `brain attention --json` (or `brain attention` for a human
 skim) at the start of a session or when asked what needs attention — it
 lists everything in `needs_attention` or `blocked` with the latest
-comment.
+comment inlined as `latest_comment`. Narrow it to the repo you're in
+with `brain attention --project <repo>`.
+
+## Finding an issue you filed earlier
+
+You won't remember the id across sessions. Look it up by project rather
+than guessing:
+
+```
+brain list --project <repo> --json     # find the issue, read its "id"
+brain show <id> --json                 # full description + comment thread
+```
+
+`brain list` hides `resolved` issues unless you pass `--all` or an
+explicit `--status`. If you only care about open human-in-the-loop
+items, `brain attention --project <repo>` is the shorter path.
 
 ## Conventions
 
@@ -65,11 +80,11 @@ comment.
 ```
 brain add "<title>" --desc "<markdown>" --status needs_attention --project <repo> --author <name>
 brain add "<title>" --desc-file - --status blocked --project <repo> --author <name>   # pipe description via stdin
-brain attention --json
+brain attention --project <repo> --json
 brain show <id> --json
 brain comment <id> "<reply>" --author <name>
 brain move <id> resolved
-brain list --project <repo>
+brain list --project <repo> --json
 ```
 
 If any command fails because the server isn't reachable, tell the human:

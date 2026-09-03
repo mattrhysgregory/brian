@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { STATUS_LABELS, STATUSES, type Status, type UpdateIssue } from "@brain/shared";
 import { api, queryKeys } from "@/lib/api";
 import { absoluteTime } from "@/lib/time";
@@ -42,14 +42,25 @@ export function IssueSheet({
     enabled: open,
   });
 
-  const invalidate = () => {
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const invalidate = (id: number) => {
     void qc.invalidateQueries({ queryKey: ["issues"] });
-    if (issueId != null) void qc.invalidateQueries({ queryKey: queryKeys.issue(issueId) });
+    void qc.invalidateQueries({ queryKey: queryKeys.issue(id) });
   };
 
+  // The id travels in the mutation variables: the description editor flushes a
+  // pending save while unmounting, which happens after `issueId` is already
+  // null, and reading it here would PATCH /api/issues/null.
   const update = useMutation({
-    mutationFn: (patch: UpdateIssue) => api.updateIssue(issueId!, patch),
-    onSuccess: invalidate,
+    mutationFn: ({ id, patch }: { id: number; patch: UpdateIssue }) =>
+      api.updateIssue(id, patch),
+    onSuccess: (_data, vars) => {
+      setSaveError(null);
+      invalidate(vars.id);
+    },
+    onError: (err) =>
+      setSaveError(err instanceof Error ? err.message : "Could not save your changes."),
   });
   const remove = useMutation({
     mutationFn: () => api.deleteIssue(issueId!),
@@ -60,11 +71,11 @@ export function IssueSheet({
   });
   const addComment = useMutation({
     mutationFn: (body: string) => api.addComment(issueId!, { body, author: "me" }),
-    onSuccess: invalidate,
+    onSuccess: () => issueId != null && invalidate(issueId),
   });
   const deleteComment = useMutation({
     mutationFn: (id: number) => api.deleteComment(id),
-    onSuccess: invalidate,
+    onSuccess: () => issueId != null && invalidate(issueId),
   });
 
   const [title, setTitle] = useState("");
@@ -91,17 +102,35 @@ export function IssueSheet({
       setTitle(issue.title);
       return;
     }
-    if (next !== issue.title) update.mutate({ title: next });
+    if (next !== issue.title) update.mutate({ id: issue.id, patch: { title: next } });
   };
 
   const commitProject = () => {
     if (!issue) return;
     const next = project.trim();
-    if (next !== (issue.project ?? "")) update.mutate({ project: next || null });
+    if (next !== (issue.project ?? ""))
+      update.mutate({ id: issue.id, patch: { project: next || null } });
   };
 
   return (
-    <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+    <>
+      {saveError && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-md border border-danger bg-card px-3 py-2 text-[12px] shadow-lg"
+        >
+          <span>{saveError}</span>
+          <button
+            type="button"
+            onClick={() => setSaveError(null)}
+            className="text-muted hover:text-fg"
+            aria-label="Dismiss error"
+          >
+            <X className="size-3.5" />
+          </button>
+        </div>
+      )}
+      <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent aria-describedby={undefined}>
         <SheetTitle className="sr-only">{issue?.title ?? "Issue"}</SheetTitle>
         <SheetDescription className="sr-only">Issue detail</SheetDescription>
@@ -135,7 +164,7 @@ export function IssueSheet({
                 <Field label="Status">
                   <Select
                     value={issue.status}
-                    onValueChange={(v) => update.mutate({ status: v as Status })}
+                    onValueChange={(v) => update.mutate({ id: issue.id, patch: { status: v as Status } })}
                   >
                     <SelectTrigger aria-label="Status">
                       <SelectValue />
@@ -169,7 +198,9 @@ export function IssueSheet({
                 <MarkdownEditor
                   key={issue.id}
                   initialMarkdown={issue.description ?? ""}
-                  onSave={(markdown) => update.mutate({ description: markdown || null })}
+                  onSave={(markdown) =>
+                    update.mutate({ id: issue.id, patch: { description: markdown || null } })
+                  }
                 />
               </div>
 
@@ -208,7 +239,8 @@ export function IssueSheet({
             </div>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

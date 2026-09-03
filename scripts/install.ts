@@ -5,6 +5,7 @@
  *  - symlinks .claude/skills/brain -> ~/.claude/skills/brain
  *  - links the `brain` CLI globally via `bun link`
  *  - installs + (re)loads a launchd LaunchAgent that runs the server at login
+ *    (macOS only; elsewhere it prints how to run the server yourself)
  *
  * Usage: bun run scripts/install.ts [--dry-run] [--no-build]
  */
@@ -56,13 +57,10 @@ function linkSkill() {
     if (st.isSymlink()) {
       log(`remove existing symlink ${dest} -> ${safeReadlink(dest)}`);
       if (!dryRun) unlinkSync(dest);
-    } else if (st.isDirectory()) {
-      throw new Error(
-        `refusing to overwrite real directory at ${dest} (not a symlink). Remove it manually if it should be replaced.`,
-      );
     } else {
-      log(`remove existing file ${dest}`);
-      if (!dryRun) unlinkSync(dest);
+      throw new Error(
+        `refusing to overwrite real ${st.isDirectory() ? "directory" : "file"} at ${dest} (not a symlink). Remove it manually if it should be replaced.`,
+      );
     }
   }
 
@@ -92,9 +90,11 @@ function safeReadlink(p: string): string {
 
 // --- 3. link CLI globally ---
 async function linkCli() {
+  // `bun link` inside packages/cli is enough to create the global `brain` bin.
+  // Running `bun link @brain/cli` in the repo root would only dirty the root
+  // package.json / bun.lock.
   const cliDir = join(REPO_ROOT, "packages", "cli");
   await run([BUN_BIN, "link"], { cwd: cliDir });
-  await run([BUN_BIN, "link", "@brain/cli"], { cwd: REPO_ROOT });
 
   log("verify: brain --help");
   if (!dryRun) {
@@ -117,6 +117,31 @@ const PLIST_LABEL = "com.brain.server";
 const PLIST_PATH = join(HOME, "Library", "LaunchAgents", `${PLIST_LABEL}.plist`);
 const LOG_DIR = join(HOME, ".brain", "logs");
 
+/** XML-escape a string for safe interpolation into the plist. */
+function xml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function plistEnvEntries(): string {
+  const env: Record<string, string> = {
+    PATH: `${BUN_BIN_DIR}:/usr/bin:/bin:/usr/sbin:/sbin`,
+  };
+  // Carry the caller's overrides through, so the login service uses the same
+  // port and database as the shell the installer ran in.
+  for (const key of ["BRAIN_PORT", "BRAIN_DB"] as const) {
+    const value = process.env[key];
+    if (value) env[key] = value;
+  }
+  return Object.entries(env)
+    .map(([k, v]) => `    <key>${xml(k)}</key>\n    <string>${xml(v)}</string>`)
+    .join("\n");
+}
+
 function plistContents(): string {
   const serverEntry = join(REPO_ROOT, "packages", "server", "src", "index.ts");
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -124,25 +149,24 @@ function plistContents(): string {
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>${PLIST_LABEL}</string>
+  <string>${xml(PLIST_LABEL)}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>${BUN_BIN}</string>
+    <string>${xml(BUN_BIN)}</string>
     <string>run</string>
-    <string>${serverEntry}</string>
+    <string>${xml(serverEntry)}</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>${join(LOG_DIR, "server.out.log")}</string>
+  <string>${xml(join(LOG_DIR, "server.out.log"))}</string>
   <key>StandardErrorPath</key>
-  <string>${join(LOG_DIR, "server.err.log")}</string>
+  <string>${xml(join(LOG_DIR, "server.err.log"))}</string>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>PATH</key>
-    <string>${BUN_BIN_DIR}:/usr/bin:/bin:/usr/sbin:/sbin</string>
+${plistEnvEntries()}
   </dict>
 </dict>
 </plist>
@@ -150,6 +174,13 @@ function plistContents(): string {
 }
 
 async function installLaunchAgent() {
+  if (process.platform !== "darwin") {
+    console.log(
+      `skip: launchd is macOS-only (platform=${process.platform}). Start the server yourself with \`bun run start\` in ${REPO_ROOT}, or wrap that command in a systemd user unit (~/.config/systemd/user/brain.service) and \`systemctl --user enable --now brain\`.`,
+    );
+    return;
+  }
+
   log(`mkdir -p ${LOG_DIR}`);
   if (!dryRun) mkdirSync(LOG_DIR, { recursive: true });
 

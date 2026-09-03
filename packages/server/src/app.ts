@@ -10,6 +10,7 @@ import {
   CreateIssueSchema,
   ListIssuesQuerySchema,
   UpdateIssueSchema,
+  type AttentionIssue,
   type ChangedEvent,
   type Comment,
   type Issue,
@@ -36,6 +37,17 @@ function firstIssue(err: ZodLikeError): string {
   if (!issue) return "Invalid request";
   const path = issue.path.join(".");
   return path ? `${path}: ${issue.message}` : issue.message;
+}
+
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/** True for http(s)://localhost|127.0.0.1 on any port. Unparseable origins are rejected. */
+function isLocalOrigin(origin: string): boolean {
+  try {
+    return LOCAL_HOSTS.has(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
 }
 
 /** Body may be absent or malformed; treat both as an empty object so zod reports the real problem. */
@@ -67,6 +79,16 @@ export function createApp(db: Db, options: AppOptions = {}) {
 
   const app = new Hono();
 
+  // Cheap CSRF guard: the server is localhost-only and unauthenticated, so a
+  // browser page on another origin must not be able to drive it. Requests with
+  // no Origin at all (CLI, curl) are not browser-initiated, so they pass.
+  app.use("/api/*", async (c, next) => {
+    if (c.req.method === "GET" || c.req.method === "HEAD") return next();
+    const origin = c.req.header("origin");
+    if (origin && !isLocalOrigin(origin)) return c.json({ error: "forbidden origin" }, 403);
+    return next();
+  });
+
   app.get("/api/health", (c) => c.json({ ok: true as const }));
 
   app.get("/api/issues", (c) => {
@@ -91,6 +113,11 @@ export function createApp(db: Db, options: AppOptions = {}) {
     return c.json(db.query(sql).all(...(params as never[])) as Issue[]);
   });
 
+  const latestComment = (issueId: number): Comment | null =>
+    (db
+      .query("SELECT * FROM comments WHERE issue_id = ? ORDER BY created_at DESC, id DESC LIMIT 1")
+      .get(issueId) as Comment | null) ?? null;
+
   app.get("/api/attention", (c) => {
     const placeholders = ATTENTION_STATUSES.map(() => "?").join(", ");
     const rows = db
@@ -98,7 +125,13 @@ export function createApp(db: Db, options: AppOptions = {}) {
         `SELECT issues.*, (SELECT COUNT(*) FROM comments WHERE comments.issue_id = issues.id) AS comment_count FROM issues WHERE status IN (${placeholders}) ORDER BY updated_at DESC, id DESC`,
       )
       .all(...(ATTENTION_STATUSES as unknown as never[])) as Issue[];
-    return c.json(rows);
+    // The attention list is tiny (open human-in-the-loop items), so a second
+    // query per row is cheaper than a join we'd have to unpack.
+    const withComments: AttentionIssue[] = rows.map((issue) => ({
+      ...issue,
+      latest_comment: latestComment(issue.id),
+    }));
+    return c.json(withComments);
   });
 
   app.post("/api/issues", async (c) => {
@@ -199,15 +232,21 @@ export function createApp(db: Db, options: AppOptions = {}) {
         done = r;
       });
 
+      let cleanup!: () => void;
+
+      // A vanished client makes these writes reject; tear the subscriber and
+      // the ping interval down rather than leaking them for the process life.
       const unsubscribe = bus.subscribe((event) => {
-        void stream.writeSSE({ event: "changed", data: JSON.stringify(event) }).catch(() => {});
+        void stream
+          .writeSSE({ event: "changed", data: JSON.stringify(event) })
+          .catch(() => cleanup());
       });
       const ping = setInterval(() => {
-        void stream.write(": ping\n\n").catch(() => {});
+        void stream.write(": ping\n\n").catch(() => cleanup());
       }, 25_000);
 
       let cleaned = false;
-      const cleanup = () => {
+      cleanup = () => {
         if (cleaned) return;
         cleaned = true;
         clearInterval(ping);

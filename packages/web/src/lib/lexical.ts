@@ -3,13 +3,9 @@ import type { InitialConfigType } from "@lexical/react/LexicalComposer";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListItemNode, ListNode } from "@lexical/list";
 import { LinkNode, AutoLinkNode } from "@lexical/link";
-import { CodeNode } from "@lexical/code";
+import { CodeNode, CodeHighlightNode } from "@lexical/code";
 import { TRANSFORMERS as ALL_TRANSFORMERS } from "@lexical/markdown";
 
-/**
- * Markdown round-tripping uses the stock transformer set minus the checklist
- * transformer, which needs the CheckList node/plugin we deliberately omit.
- */
 export const TRANSFORMERS = ALL_TRANSFORMERS;
 
 export const EDITOR_NODES: Array<Klass<LexicalNode>> = [
@@ -20,6 +16,9 @@ export const EDITOR_NODES: Array<Klass<LexicalNode>> = [
   LinkNode,
   AutoLinkNode,
   CodeNode,
+  // CodeNode's tokenizer/Tab handling creates CodeHighlightNodes, so the node
+  // must be registered or editing inside a fenced block throws.
+  CodeHighlightNode,
 ];
 
 /** Class names map onto the `.lex-*` rules in index.css. */

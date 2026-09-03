@@ -37,12 +37,13 @@ id, status, project, title, updated.
 ## brain attention
 
 ```
-brain attention [--json]
+brain attention [--project <p>] [--json]
 ```
 
-Lists issues in `needs_attention` or `blocked`, with an excerpt of the
-latest comment on each (non-JSON mode only — `--json` returns the raw
-issue array with no comment fetch, for speed).
+Lists issues in `needs_attention` or `blocked`, newest activity first.
+Each issue carries a `latest_comment` (the most recent comment, or
+`null`); the table view shows an excerpt of it. `--project <p>` narrows
+the list to one project. `--json` returns the raw array.
 
 ## brain show
 

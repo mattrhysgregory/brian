@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Issue, Status } from "@brain/shared";
 import { api, queryKeys } from "@/lib/api";
@@ -33,6 +33,13 @@ export default function App() {
     for (const issue of issues ?? []) if (issue.project) set.add(issue.project);
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [issues]);
+
+  // A project only exists while some issue carries it; once the last one is
+  // renamed or deleted the filter would hide the whole board.
+  useEffect(() => {
+    if (!issues) return;
+    if (project !== ALL_PROJECTS && !projects.includes(project)) setProject(ALL_PROJECTS);
+  }, [issues, projects, project]);
 
   const visible = useMemo(
     () =>

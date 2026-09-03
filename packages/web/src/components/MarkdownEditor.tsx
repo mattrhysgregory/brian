@@ -11,6 +11,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $convertFromMarkdownString, $convertToMarkdownString } from "@lexical/markdown";
+import { registerCodeHighlighting } from "@lexical/code";
 import { BLUR_COMMAND, COMMAND_PRIORITY_LOW } from "lexical";
 import { EDITOR_NODES, EDITOR_THEME, TRANSFORMERS } from "@/lib/lexical";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,29 @@ function BlurSavePlugin({ onFlush }: { onFlush: () => void }) {
       ),
     [editor, onFlush],
   );
+  return null;
+}
+
+/** Prism-based syntax highlighting for fenced code blocks. */
+function CodeHighlightPlugin() {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => registerCodeHighlighting(editor), [editor]);
+  return null;
+}
+
+/**
+ * Re-exports the freshly imported markdown once on mount. Import/export is not
+ * byte-identical for all inputs, so this round-tripped string — not the raw
+ * `initialMarkdown` — is the baseline an untouched document must compare equal
+ * to, otherwise merely opening an issue would rewrite its description.
+ */
+function BaselinePlugin({ onBaseline }: { onBaseline: (markdown: string) => void }) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    editor.getEditorState().read(() => {
+      onBaseline($convertToMarkdownString(TRANSFORMERS));
+    });
+  }, [editor, onBaseline]);
   return null;
 }
 
@@ -57,15 +81,26 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const latest = useRef(initialMarkdown);
   const saved = useRef(initialMarkdown);
+  // The round-tripped baseline; until it lands nothing counts as a change.
+  const baseline = useRef<string | null>(null);
+  // Only a real edit ever triggers a save, so open+close is a no-op.
+  const dirty = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
+
+  const handleBaseline = useCallback((markdown: string) => {
+    baseline.current = markdown;
+    latest.current = markdown;
+    saved.current = markdown;
+  }, []);
 
   const flush = useCallback(() => {
     if (timer.current) {
       clearTimeout(timer.current);
       timer.current = null;
     }
+    if (!dirty.current) return;
     if (latest.current === saved.current) return;
     saved.current = latest.current;
     onSaveRef.current(latest.current);
@@ -79,6 +114,12 @@ export function MarkdownEditor({
       editor.read(() => {
         latest.current = $convertToMarkdownString(TRANSFORMERS);
       });
+      // Before the baseline exists there is nothing to compare against, and a
+      // document still identical to it was never really edited. Once it has
+      // diverged it stays dirty, so reverting an edit is itself saved.
+      if (baseline.current === null) return;
+      if (!dirty.current && latest.current === baseline.current) return;
+      dirty.current = true;
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(flush, DEBOUNCE_MS);
     },
@@ -122,6 +163,8 @@ export function MarkdownEditor({
       <LinkPlugin />
       <TabIndentationPlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
+      <CodeHighlightPlugin />
+      <BaselinePlugin onBaseline={handleBaseline} />
       <OnChangePlugin ignoreSelectionChange onChange={handleChange} />
       <BlurSavePlugin onFlush={flush} />
     </LexicalComposer>

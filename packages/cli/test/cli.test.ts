@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type { Comment, Issue, IssueWithComments } from "@brain/shared";
+import type { AttentionIssue, Comment, Issue } from "@brain/shared";
 import { run } from "../src/cli";
 
 const BASE_URL = "http://localhost:4400";
@@ -14,6 +14,7 @@ function makeIssue(overrides: Partial<Issue> = {}): Issue {
     created_by: "agent",
     created_at: "2026-09-03T10:00:00.000Z",
     updated_at: "2026-09-03T10:00:00.000Z",
+    comment_count: 0,
     ...overrides,
   };
 }
@@ -129,36 +130,124 @@ describe("brain list", () => {
   });
 });
 
-describe("brain attention", () => {
-  test("fetches attention issues and latest comment per issue", async () => {
-    const issues = [makeIssue({ id: 5, status: "blocked" })];
-    const comment: Comment = {
-      id: 1,
-      issue_id: 5,
-      author: "me",
-      body: "please clarify the requirements",
-      created_at: "2026-09-03T11:00:00.000Z",
-    };
-    const detail: IssueWithComments = { ...issues[0], comments: [comment] };
+function makeComment(overrides: Partial<Comment> = {}): Comment {
+  return {
+    id: 1,
+    issue_id: 5,
+    author: "me",
+    body: "please clarify the requirements",
+    created_at: "2026-09-03T11:00:00.000Z",
+    ...overrides,
+  };
+}
 
+function makeAttentionIssue(overrides: Partial<AttentionIssue> = {}): AttentionIssue {
+  return { ...makeIssue(), latest_comment: null, ...overrides };
+}
+
+describe("brain attention", () => {
+  test("renders the latest comment inlined by the server, with no extra fetches", async () => {
+    const issues = [
+      makeAttentionIssue({ id: 5, status: "blocked", latest_comment: makeComment() }),
+    ];
     const { io, captured } = makeIo((url) => {
       if (url.endsWith("/api/attention")) return jsonResponse(issues);
-      if (url.endsWith("/api/issues/5")) return jsonResponse(detail);
       throw new Error(`unexpected url ${url}`);
     });
 
     const code = await run(["attention"], io);
     expect(code).toBe(0);
+    // one request only: no N+1 per-issue detail fetches
+    expect(captured.calls).toHaveLength(1);
     expect(captured.stdout[0]).toContain("#5");
     expect(captured.stdout[0]).toContain("please clarify");
   });
 
-  test("--json skips fetching comments", async () => {
-    const issues = [makeIssue({ id: 5, status: "blocked" })];
+  test("shows a dash for an issue with no comments", async () => {
+    const issues = [makeAttentionIssue({ id: 7, status: "needs_attention" })];
+    const { io, captured } = makeIo(() => jsonResponse(issues));
+    await run(["attention"], io);
+    expect(captured.calls).toHaveLength(1);
+    expect(captured.stdout[0]).toContain("#7");
+  });
+
+  test("--json prints the raw response", async () => {
+    const issues = [makeAttentionIssue({ id: 5, status: "blocked" })];
     const { io, captured } = makeIo(() => jsonResponse(issues));
     await run(["attention", "--json"], io);
     expect(captured.calls).toHaveLength(1);
     expect(JSON.parse(captured.stdout[0])).toEqual(issues);
+  });
+
+  test("--project filters client-side", async () => {
+    const issues = [
+      makeAttentionIssue({ id: 5, project: "brain", title: "keep me" }),
+      makeAttentionIssue({ id: 6, project: "other", title: "drop me" }),
+      makeAttentionIssue({ id: 7, project: null, title: "also drop" }),
+    ];
+    const { io, captured } = makeIo(() => jsonResponse(issues));
+
+    const code = await run(["attention", "--project", "brain", "--json"], io);
+    expect(code).toBe(0);
+    expect(captured.calls).toHaveLength(1);
+    expect(JSON.parse(captured.stdout[0]).map((i: Issue) => i.id)).toEqual([5]);
+  });
+
+  test("--project also filters the table output", async () => {
+    const issues = [
+      makeAttentionIssue({ id: 5, project: "brain", title: "keep me" }),
+      makeAttentionIssue({ id: 6, project: "other", title: "drop me" }),
+    ];
+    const { io, captured } = makeIo(() => jsonResponse(issues));
+    await run(["attention", "--project", "brain"], io);
+    expect(captured.stdout[0]).toContain("keep me");
+    expect(captured.stdout[0]).not.toContain("drop me");
+  });
+});
+
+describe("flag parsing", () => {
+  test("--desc consumes a value that starts with --", async () => {
+    const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
+    const code = await run(["add", "x", "--desc", "--- context\nmore"], io);
+    expect(code).toBe(0);
+    const body = JSON.parse(captured.calls[0].init?.body as string);
+    expect(body.description).toBe("--- context\nmore");
+  });
+
+  test("a dashed --desc value is not mistaken for another flag", async () => {
+    const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
+    await run(["add", "x", "--desc", "--project", "--project", "brain"], io);
+    const body = JSON.parse(captured.calls[0].init?.body as string);
+    expect(body.description).toBe("--project");
+    expect(body.project).toBe("brain");
+  });
+
+  test("--flag=value form is supported", async () => {
+    const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
+    await run(["add", "x", "--desc=--- ctx", "--project=brain", "--status=blocked"], io);
+    const body = JSON.parse(captured.calls[0].init?.body as string);
+    expect(body.description).toBe("--- ctx");
+    expect(body.project).toBe("brain");
+    expect(body.status).toBe("blocked");
+  });
+
+  test("--project= clears the project on edit", async () => {
+    const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
+    await run(["edit", "1", "--project="], io);
+    expect(JSON.parse(captured.calls[0].init?.body as string)).toEqual({ project: null });
+  });
+
+  test("a value flag with no following token is a usage error", async () => {
+    const { io, captured } = makeIo(() => jsonResponse(makeIssue()));
+    const code = await run(["add", "x", "--desc"], io);
+    expect(code).toBe(1);
+    expect(captured.stderr[0]).toContain("--desc requires a value");
+  });
+
+  test("boolean flags still parse when followed by another flag", async () => {
+    const { io, captured } = makeIo(() => jsonResponse([makeIssue()]));
+    await run(["list", "--all", "--json"], io);
+    expect(JSON.parse(captured.stdout[0])).toHaveLength(1);
   });
 });
 

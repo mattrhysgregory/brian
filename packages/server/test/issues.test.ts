@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Issue } from "@brain/shared";
+import type { AttentionIssue, Issue } from "@brain/shared";
 import { addComment, createIssue, getIssue, makeApp } from "./helpers";
 
 describe("issues", () => {
@@ -145,11 +145,29 @@ describe("issues", () => {
     await createIssue(app, { title: "bl", status: "blocked" });
     await createIssue(app, { title: "rs", status: "resolved" });
 
-    let rows = (await (await app.request("/api/attention")).json()) as Issue[];
+    let rows = (await (await app.request("/api/attention")).json()) as AttentionIssue[];
     expect(rows.map((i) => i.title)).toEqual(["bl", "na"]);
 
     await addComment(app, na.id);
-    rows = (await (await app.request("/api/attention")).json()) as Issue[];
+    rows = (await (await app.request("/api/attention")).json()) as AttentionIssue[];
     expect(rows.map((i) => i.title)).toEqual(["na", "bl"]);
+  });
+
+  test("attention inlines the latest comment per issue", async () => {
+    const { app } = makeApp();
+    const na = await createIssue(app, { title: "na", status: "needs_attention" });
+    const bl = await createIssue(app, { title: "bl", status: "blocked" });
+
+    await addComment(app, na.id, { body: "first", author: "me" });
+    const newest = await addComment(app, na.id, { body: "second", author: "me" });
+
+    const rows = (await (await app.request("/api/attention")).json()) as AttentionIssue[];
+    const byId = new Map(rows.map((i) => [i.id, i]));
+
+    expect(byId.get(na.id)?.latest_comment?.id).toBe(newest.id);
+    expect(byId.get(na.id)?.latest_comment?.body).toBe("second");
+    expect(byId.get(na.id)?.comment_count).toBe(2);
+    // an issue with no comments still carries the field, as null
+    expect(byId.get(bl.id)?.latest_comment).toBeNull();
   });
 });

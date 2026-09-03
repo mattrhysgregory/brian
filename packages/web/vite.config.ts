@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: "http://localhost:4400",
+        target: `http://localhost:${process.env.BRAIN_PORT ?? 4400}`,
         changeOrigin: true,
         // SSE needs an un-buffered, long-lived connection.
         ws: false,

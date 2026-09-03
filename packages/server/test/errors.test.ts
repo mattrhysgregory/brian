@@ -79,3 +79,76 @@ describe("validation and not-found", () => {
     expect(await res.text()).toContain("bun run build");
   });
 });
+
+describe("invalid ids", () => {
+  test("PATCH /api/issues/null is a 400", async () => {
+    const { app } = makeApp();
+    const res = await app.request("/api/issues/null", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "x" }),
+    });
+    expect(res.status).toBe(400);
+    expect((await res.json()) as { error: string }).toEqual({ error: "Invalid issue id" });
+  });
+
+  test("PATCH /api/issues/abc is a 400", async () => {
+    const { app } = makeApp();
+    const res = await app.request("/api/issues/abc", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "x" }),
+    });
+    expect(res.status).toBe(400);
+    expect((await res.json()) as { error: string }).toEqual({ error: "Invalid issue id" });
+  });
+});
+
+describe("origin guard", () => {
+  test("rejects a non-local Origin on writes", async () => {
+    const { app } = makeApp();
+    const res = await app.request("/api/issues", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://evil.example.com" },
+      body: JSON.stringify({ title: "csrf" }),
+    });
+    expect(res.status).toBe(403);
+    expect((await res.json()) as { error: string }).toEqual({ error: "forbidden origin" });
+    expect(((await (await app.request("/api/issues")).json()) as unknown[]).length).toBe(0);
+  });
+
+  test("allows localhost and 127.0.0.1 origins on any port", async () => {
+    const { app } = makeApp();
+    for (const origin of ["http://localhost:4400", "http://127.0.0.1:5173", "http://localhost"]) {
+      const res = await app.request("/api/issues", {
+        method: "POST",
+        headers: { "content-type": "application/json", origin },
+        body: JSON.stringify({ title: `from ${origin}` }),
+      });
+      expect(res.status).toBe(201);
+    }
+  });
+
+  test("allows requests with no Origin header (CLI, curl)", async () => {
+    const { app } = makeApp();
+    const res = await app.request("/api/issues", json({ title: "from the cli" }));
+    expect(res.status).toBe(201);
+  });
+
+  test("GET requests are never blocked by origin", async () => {
+    const { app } = makeApp();
+    const res = await app.request("/api/issues", { headers: { origin: "https://evil.example.com" } });
+    expect(res.status).toBe(200);
+  });
+
+  test("DELETE from a foreign origin is rejected", async () => {
+    const { app } = makeApp();
+    const issue = await createIssue(app);
+    const res = await app.request(`/api/issues/${issue.id}`, {
+      method: "DELETE",
+      headers: { origin: "https://evil.example.com" },
+    });
+    expect(res.status).toBe(403);
+    expect((await app.request(`/api/issues/${issue.id}`)).status).toBe(200);
+  });
+});

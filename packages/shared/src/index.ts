@@ -42,6 +42,11 @@ export interface IssueWithComments extends Issue {
   comments: Comment[];
 }
 
+/** An issue on the attention list, with its most recent comment (if any) inlined. */
+export interface AttentionIssue extends Issue {
+  latest_comment: Comment | null;
+}
+
 export const CreateIssueSchema = z.object({
   title: z.string().trim().min(1).max(500),
   description: z.string().max(100_000).nullable().optional(),

@@ -1,5 +1,5 @@
 import { DEFAULT_BASE_URL } from "@brain/shared";
-import type { Comment, Issue, IssueWithComments, Status } from "@brain/shared";
+import type { AttentionIssue, Comment, Issue, IssueWithComments, Status } from "@brain/shared";
 import { ApiRequestError, ServerUnreachableError, apiRequest } from "./api";
 import { formatAttention, formatIssueDetail, formatIssueList } from "./format";
 
@@ -37,22 +37,39 @@ interface ParsedArgs {
   flags: Map<string, string | boolean>;
 }
 
+/**
+ * Flags that always take the next token as their value, even when that token
+ * itself starts with "--" (markdown descriptions legitimately begin with ---).
+ */
+const VALUE_FLAGS = new Set(["desc", "desc-file", "status", "project", "author", "title"]);
+
 function parseArgs(argv: string[]): ParsedArgs {
   const positional: string[] = [];
   const flags = new Map<string, string | boolean>();
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg.startsWith("--")) {
-      const key = arg.slice(2);
-      const next = argv[i + 1];
-      if (next !== undefined && !next.startsWith("--")) {
-        flags.set(key, next);
-        i++;
-      } else {
-        flags.set(key, true);
-      }
-    } else {
+    if (!arg.startsWith("--")) {
       positional.push(arg);
+      continue;
+    }
+    const body = arg.slice(2);
+    const eq = body.indexOf("=");
+    if (eq !== -1) {
+      flags.set(body.slice(0, eq), body.slice(eq + 1));
+      continue;
+    }
+    const next = argv[i + 1];
+    if (VALUE_FLAGS.has(body)) {
+      if (next === undefined) {
+        throw new UsageError(`--${body} requires a value`);
+      }
+      flags.set(body, next);
+      i++;
+    } else if (next !== undefined && !next.startsWith("--")) {
+      flags.set(body, next);
+      i++;
+    } else {
+      flags.set(body, true);
     }
   }
   return { positional, flags };
@@ -68,7 +85,7 @@ const USAGE = `brain — tiny local kanban CLI
 Usage:
   brain add <title> [--desc <md>] [--desc-file <path>|-] [--status <s>] [--project <p>] [--author <a>]
   brain list [--status <s>] [--project <p>] [--all] [--json]
-  brain attention [--json]
+  brain attention [--project <p>] [--json]
   brain show <id> [--json]
   brain move <id> <status>
   brain edit <id> [--title <t>] [--desc <md>|--desc-file <path>|-] [--project <p>]
@@ -99,12 +116,6 @@ async function resolveDescription(
   return undefined;
 }
 
-async function latestComment(io: CliIO, issueId: number): Promise<Comment | null> {
-  const issue = await apiRequest<IssueWithComments>(io.baseUrl, `/api/issues/${issueId}`);
-  if (issue.comments.length === 0) return null;
-  return issue.comments[issue.comments.length - 1];
-}
-
 export async function run(argv: string[], io: CliIO): Promise<number> {
   const [cmd, ...rest] = argv;
 
@@ -113,10 +124,11 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
     return cmd ? 0 : 0;
   }
 
-  const { positional, flags } = parseArgs(rest);
-  const json = flags.get("json") === true;
-
   try {
+    // Inside the try so a malformed flag surfaces as a usage error, not a crash.
+    const { positional, flags } = parseArgs(rest);
+    const json = flags.get("json") === true;
+
     switch (cmd) {
       case "add": {
         const title = positional[0];
@@ -129,9 +141,9 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
           method: "POST",
           body: {
             title,
-            description: description ?? null,
+            description: description || null,
             status,
-            project: project ?? null,
+            project: project || null,
             created_by: author,
           },
         });
@@ -154,15 +166,17 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
       }
 
       case "attention": {
-        const issues = await apiRequest<Issue[]>(io.baseUrl, "/api/attention");
+        let issues = await apiRequest<AttentionIssue[]>(io.baseUrl, "/api/attention");
+        // /api/attention takes no filters, so narrow by project client-side.
+        const project = flagStr(flags, "project");
+        if (project) issues = issues.filter((i) => i.project === project);
         if (json) {
           io.stdout(JSON.stringify(issues));
           return 0;
         }
-        const latestComments = new Map<number, Comment | null>();
-        for (const issue of issues) {
-          latestComments.set(issue.id, await latestComment(io, issue.id));
-        }
+        const latestComments = new Map<number, Comment | null>(
+          issues.map((i) => [i.id, i.latest_comment ?? null]),
+        );
         io.stdout(formatAttention(issues, latestComments));
         return 0;
       }
@@ -197,9 +211,10 @@ export async function run(argv: string[], io: CliIO): Promise<number> {
         const title = flagStr(flags, "title");
         if (title !== undefined) body.title = title;
         const description = await resolveDescription(io, flags);
-        if (description !== undefined) body.description = description;
+        if (description !== undefined) body.description = description || null;
         const project = flagStr(flags, "project");
-        if (project !== undefined) body.project = project;
+        // An explicitly empty --project clears it, matching the web UI.
+        if (project !== undefined) body.project = project || null;
         if (Object.keys(body).length === 0) {
           throw new UsageError("brain edit <id> requires at least one of --title --desc/--desc-file --project");
         }
