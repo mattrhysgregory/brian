@@ -53,21 +53,6 @@
 }
 
 @layer base {
-  button:not(:disabled),
-  [role="button"]:not([aria-disabled="true"]),
-  [role="menuitem"]:not([data-disabled]),
-  [role="option"]:not([data-disabled]),
-  a[href],
-  select:not(:disabled),
-  label[for],
-  summary {
-    cursor: pointer;
-  }
-  button:disabled,
-  [aria-disabled="true"],
-  [data-disabled] {
-    cursor: not-allowed;
-  }
 
   * {
     border-color: var(--border);
@@ -202,4 +187,32 @@
   .lex-root a[href*="github.com/"] {
     cursor: pointer;
   }
+}
+
+/* Pointer cursor on everything interactive. Unlayered + !important so no
+   component class or preflight rule can override it. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([data-disabled]),
+[role="option"]:not([data-disabled]),
+[role="tab"],
+[role="switch"],
+[role="checkbox"],
+a[href],
+select:not(:disabled),
+label[for],
+summary,
+.cursor-pointer {
+  cursor: pointer !important;
+}
+button:disabled,
+[aria-disabled="true"],
+[data-disabled] {
+  cursor: not-allowed !important;
+}
+button.cursor-grab, .cursor-grab {
+  cursor: grab !important;
+}
+button.cursor-grab:active, .cursor-grab:active {
+  cursor: grabbing !important;
 }
