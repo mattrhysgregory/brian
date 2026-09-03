@@ -5,6 +5,8 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { TabIndentationPlugin } from "@lexical/react/LexicalTabIndentationPlugin";
 import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
@@ -13,7 +15,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { $convertFromMarkdownString, $convertToMarkdownString } from "@lexical/markdown";
 import { registerCodeHighlighting } from "@lexical/code";
 import { BLUR_COMMAND, COMMAND_PRIORITY_LOW } from "lexical";
-import { EDITOR_NODES, EDITOR_THEME, TRANSFORMERS } from "@/lib/lexical";
+import { AUTO_LINK_MATCHERS, EDITOR_NODES, EDITOR_THEME, TRANSFORMERS } from "@/lib/lexical";
 import { cn } from "@/lib/utils";
 
 const DEBOUNCE_MS = 800;
@@ -161,6 +163,10 @@ export function MarkdownEditor({
       <HistoryPlugin />
       <ListPlugin />
       <LinkPlugin />
+      {/* Bare URLs agents paste become real links, so they get the GitHub mark too. */}
+      <AutoLinkPlugin matchers={AUTO_LINK_MATCHERS} />
+      {/* Links stay clickable inside the editable surface (⌘/Ctrl-click). */}
+      <ClickableLinkPlugin newTab />
       <TabIndentationPlugin />
       <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
       <CodeHighlightPlugin />

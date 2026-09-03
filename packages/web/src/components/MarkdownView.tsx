@@ -2,8 +2,10 @@ import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
+import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
+import { ClickableLinkPlugin } from "@lexical/react/LexicalClickableLinkPlugin";
 import { $convertFromMarkdownString } from "@lexical/markdown";
-import { EDITOR_NODES, EDITOR_THEME, TRANSFORMERS } from "@/lib/lexical";
+import { AUTO_LINK_MATCHERS, EDITOR_NODES, EDITOR_THEME, TRANSFORMERS } from "@/lib/lexical";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,6 +28,8 @@ export function MarkdownView({ markdown, className }: { markdown: string; classN
         contentEditable={<ContentEditable className={cn("lex-root", className)} readOnly />}
         ErrorBoundary={LexicalErrorBoundary}
       />
+      <AutoLinkPlugin matchers={AUTO_LINK_MATCHERS} />
+      <ClickableLinkPlugin newTab />
     </LexicalComposer>
   );
 }

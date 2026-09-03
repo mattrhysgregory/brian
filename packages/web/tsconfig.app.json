@@ -13,5 +13,7 @@
     "baseUrl": ".",
     "paths": { "@/*": ["./src/*"] }
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Tests run under bun (bun:test types), not the app build.
+  "exclude": ["src/**/*.test.ts"]
 }

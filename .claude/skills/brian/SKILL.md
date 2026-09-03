@@ -70,6 +70,9 @@ items, `brian attention --project <repo>` is the shorter path.
 - Write descriptions that state: what was done, what you need from the
   human (a decision, a yes/no, credentials, a review), and links or file
   paths relevant to the work. Use markdown; it renders as-is.
+- If the work has a GitHub PR or issue, put its full URL in the
+  description (not only in a comment). The board shows GitHub links as a
+  chip on the card so the human can jump straight to the PR.
 - Keep titles short and imperative, e.g. "Review new auth middleware",
   "Need Stripe test key", "Confirm delete-cascade behavior".
 - Prefer one issue per discrete question/task. Don't bundle unrelated

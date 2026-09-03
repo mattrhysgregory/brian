@@ -2,11 +2,37 @@ import type { Klass, LexicalNode } from "lexical";
 import type { InitialConfigType } from "@lexical/react/LexicalComposer";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListItemNode, ListNode } from "@lexical/list";
-import { LinkNode, AutoLinkNode } from "@lexical/link";
+import { LinkNode, AutoLinkNode, $isAutoLinkNode } from "@lexical/link";
 import { CodeNode, CodeHighlightNode } from "@lexical/code";
-import { TRANSFORMERS as ALL_TRANSFORMERS } from "@lexical/markdown";
+import { TRANSFORMERS as ALL_TRANSFORMERS, type TextMatchTransformer } from "@lexical/markdown";
+import { createLinkMatcherWithRegExp } from "@lexical/react/LexicalAutoLinkPlugin";
 
-export const TRANSFORMERS = ALL_TRANSFORMERS;
+/** Matches an http(s) URL sitting on its own in the text. */
+const URL_REGEXP = /https?:\/\/[\w.-]+(?:\.[\w.-]+)*(?:[\w\-._~:/?#[\]@!$&'()*+,;=%]*)?/;
+
+/** Turns bare URLs that agents paste into real links (and so into icon carriers). */
+export const AUTO_LINK_MATCHERS = [createLinkMatcherWithRegExp(URL_REGEXP)];
+
+/**
+ * A bare URL that AutoLinkPlugin linkified must round-trip back to bare text,
+ * otherwise merely opening an issue would rewrite `https://…` to `[https://…](https://…)`.
+ * Listed before the stock transformers so it wins for AutoLinkNodes.
+ */
+const AUTO_LINK_AS_TEXT: TextMatchTransformer = {
+  dependencies: [AutoLinkNode],
+  export: (node) => {
+    if (!$isAutoLinkNode(node)) return null;
+    const text = node.getTextContent();
+    return text === node.getURL() ? text : null;
+  },
+  importRegExp: /(?!)/,
+  regExp: /(?!)/,
+  replace: () => {},
+  trigger: "",
+  type: "text-match",
+};
+
+export const TRANSFORMERS = [AUTO_LINK_AS_TEXT, ...ALL_TRANSFORMERS];
 
 export const EDITOR_NODES: Array<Klass<LexicalNode>> = [
   HeadingNode,

@@ -1,6 +1,9 @@
+import { useMemo } from "react";
 import { MessageSquare } from "lucide-react";
 import type { Issue } from "@brian/shared";
 import { Badge } from "@/components/ui/badge";
+import { GitHubMark } from "./GitHubMark";
+import { extractGitHubRefs, type GitHubRef } from "@/lib/github";
 import { absoluteTime, relativeTime } from "@/lib/time";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +15,60 @@ export interface IssueCardProps {
   overlay?: boolean;
   /** Rendered top-right; carries dnd-kit's listeners in SortableIssueCard. */
   dragHandle?: React.ReactNode;
+}
+
+function chipLabel(ref: GitHubRef): string {
+  return ref.number != null ? `${ref.repo}#${ref.number}` : `${ref.owner}/${ref.repo}`;
+}
+
+function Chip({ href, title, children }: { href: string; title: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={title}
+      // The card body is a button and the grip starts drags; neither should
+      // react to a chip click.
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      className="inline-flex max-w-full items-center gap-1 rounded border border-border px-1 py-px text-[10px] leading-4 text-muted transition-colors hover:border-muted hover:text-fg focus-visible:text-fg"
+    >
+      <GitHubMark className="shrink-0" />
+      <span className="truncate">{children}</span>
+    </a>
+  );
+}
+
+/**
+ * Every pull/issue link gets its own chip — issues often reference several PRs
+ * — while plain repo/commit/blob links collapse into one trailing chip.
+ */
+function GitHubChips({ refs }: { refs: GitHubRef[] }) {
+  const numbered = refs.filter((r) => r.number != null);
+  const others = refs.filter((r) => r.number == null);
+  if (numbered.length === 0 && others.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {numbered.map((ref) => (
+        <Chip key={ref.url} href={ref.url} title={ref.url}>
+          {chipLabel(ref)}
+        </Chip>
+      ))}
+      {others.length === 1 && (
+        <Chip href={others[0]!.url} title={others[0]!.url}>
+          {chipLabel(others[0]!)}
+        </Chip>
+      )}
+      {others.length > 1 && (
+        <Chip href={others[0]!.url} title={others.map((r) => r.url).join("\n")}>
+          +{others.length}
+        </Chip>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -26,6 +83,8 @@ export function IssueCard({
   overlay,
   dragHandle,
 }: IssueCardProps) {
+  const refs = useMemo(() => extractGitHubRefs(issue.description), [issue.description]);
+
   const body = (
     <>
       <p className="pr-6 text-[13px] leading-snug">{issue.title}</p>
@@ -64,6 +123,12 @@ export function IssueCard({
         </button>
       ) : (
         <div className="p-2.5">{body}</div>
+      )}
+      {/* Outside the card button: an anchor may not nest inside it. */}
+      {refs.length > 0 && (
+        <div className="-mt-1 px-2.5 pb-2.5">
+          <GitHubChips refs={refs} />
+        </div>
       )}
       {dragHandle}
     </div>
