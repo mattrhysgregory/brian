@@ -4,8 +4,11 @@ A small local Kanban board for keeping track of work, especially the work your
 AI agents do on your behalf. Agents file cards when they need you. You reply
 from the board. They pick up your reply and carry on.
 
+It works just as well as a plain personal todo list. Agents are optional: you
+can add, drag and resolve your own cards and never touch the CLI.
+
 It runs on your machine, starts at login, and stores everything in one SQLite
-file. Nothing leaves your laptop. (The name is a play on "brain". Squint.)
+file. Nothing leaves your laptop.
 
 ## The problem it solves
 
@@ -17,8 +20,9 @@ it is easy to lose track of who is waiting on what, or to only find out when
 you happen to scroll back.
 
 brian gives that state one home. Agents write to it, you read and reply from
-it, and agents read your reply back. It is deliberately tiny: four columns,
-comments, markdown, and nothing else.
+it, and agents read your reply back. Your own tasks live on the same board, so
+there is one list to look at rather than two. It is deliberately tiny: four
+columns, comments, markdown, and nothing else.
 
 ## The three parts
 
